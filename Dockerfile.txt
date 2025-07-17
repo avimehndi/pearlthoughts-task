@@ -1,0 +1,23 @@
+# Use official Node.js image
+FROM node:20
+
+# Set working directory
+WORKDIR /app
+
+# Copy only package files first for caching install
+COPY package*.json ./
+
+# Install dependencies inside container
+RUN npm install
+
+# Copy the rest of the app
+COPY . .
+
+# Build the Strapi app
+RUN npm run build
+
+# Expose port
+EXPOSE 1337
+
+# Start the app
+CMD ["npm", "run", "develop"]
