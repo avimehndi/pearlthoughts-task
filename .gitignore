@@ -1,0 +1,45 @@
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.env
+.env.*
+
+# Strapi
+.build/
+.cache/
+dist/
+tmp/
+
+# Logs
+logs
+*.log
+log.txt
+
+# Docker
+*.pid
+Dockerfile.dev
+docker-compose.override.yml
+
+# Terraform
+*.tfstate
+*.tfstate.backup
+.terraform/
+terraform.tfvars
+
+# System Files
+.DS_Store
+Thumbs.db
+
+# VS Code
+.vscode/
+
+# SSH Keys (don't accidentally commit)
+*.pem
+*.key
+*.pub
+
+# Ignore OS-specific files
+*.swp
+*~
