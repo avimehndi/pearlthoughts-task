@@ -8,14 +8,15 @@ This project automates the deployment of a Dockerized Strapi CMS instance on an 
 ---
 
 ## 📁 Directory Structure
-   strapi-on-ec2/
-├── main.tf # Defines EC2, VPC, SG, and User Data
-├── variables.tf # All required variables
-├── outputs.tf # Outputs like EC2 Public IP
-├── userdata.sh # Bootstraps EC2 with Docker and Strapi container
-├── Dockerfile # Dockerfile for building Strapi image
-├── .dockerignore # Exclude unnecessary files from Docker build
-└── README.md # You're here!
+   strapi-terraform-deploy/
+├── Dockerfile            # Dockerfile for Strapi app
+├── main.tf               # Terraform config: VPC, SG, EC2, etc.
+├── variables.tf          # Terraform input variables
+├── outputs.tf            # Terraform outputs (e.g., public IP)
+├── userdata.sh           # User data script to install Docker and run container
+├── .gitignore            # Git ignored files
+├── README.md             # This file
+
 ---
 
 ## 🧱 Technologies Used
