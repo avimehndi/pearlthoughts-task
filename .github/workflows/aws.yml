@@ -1,0 +1,26 @@
+name: Deploy to ECS via Terraform
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: 1.7.0
+
+    - name: Terraform Init
+      run: terraform init
+      working-directory: terraform/
+
+    - name: Terraform Apply
+      run: terraform apply -auto-approve -var="docker_image_url=${{ secrets.DOCKER_USERNAME }}/strapi-app:latest"
+      working-directory: terraform/
+
