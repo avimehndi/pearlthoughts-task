@@ -634,3 +634,115 @@ It will automatically redirect to `/admin` to set up your admin account.
 
 ---
 
+# Task 6 - Deploy Strapi on AWS ECS Fargate using Terraform with full infrastructure automation.
+
+This task deploys a **Strapi CMS** app to **AWS ECS Fargate**, fronted by an **Application Load Balancer (ALB)** using **Terraform**.
+
+---
+
+## Project Structure
+
+```
+.
+├── my-strapi-project
+    ├── Dockerfile
+├── terraform/
+│   ├── main.tf
+│   ├── variables.tf
+│   ├── terraform.tfvars
+│   └── outputs.tf
+```
+
+---
+
+## Prerequisites
+
+- AWS CLI configured
+- Terraform installed
+- Docker installed
+- AWS IAM roles created:
+  - `ecsTaskExecutionRole` (with policies: `AmazonECSTaskExecutionRolePolicy`, `CloudWatchLogsFullAccess`)
+
+---
+
+## Step 1: Build & Push Docker Image
+
+```bash
+# 1. Build Docker image
+docker build -t strapi-app .
+
+# 2. Tag image
+docker tag strapi-app:latest <your_account_id>.dkr.ecr.us-east-2.amazonaws.com/strapi-app:latest
+
+# 3. Authenticate Docker to ECR
+aws ecr get-login-password --region us-east-2 | docker login --username AWS --password-stdin <your_account_id>.dkr.ecr.us-east-2.amazonaws.com
+
+# 4. Push image to ECR
+docker push <your_account_id>.dkr.ecr.us-east-2.amazonaws.com/strapi-app:latest
+```
+
+---
+
+## Step 2: Configure Terraform
+
+Update `terraform.tfvars`:
+
+```hcl
+aws_access_key       = "YOUR_ACCESS_KEY"
+aws_secret_key       = "YOUR_SECRET_KEY"
+region               = "us-east-2"
+container_image      = "<your_account_id>.dkr.ecr.us-east-2.amazonaws.com/strapi-app:latest"
+execution_role_arn   = "arn:aws:iam::<account_id>:role/ecs-task-execution-role"
+task_role_arn        = "arn:aws:iam::<account_id>:role/ecs-task-execution-role"
+app_keys             = "some_app_key"
+admin_jwt_secret     = "admin_secret"
+jwt_secret           = "jwt_secret"
+api_token_salt       = "salt_key"
+```
+
+---
+
+## Step 3: Deploy with Terraform
+
+```bash
+cd terraform/
+
+terraform init
+terraform plan 
+terraform apply 
+```
+
+Output:  
+```
+strapi_url = aviral-strapi-alb-xxxxxxxx.us-east-2.elb.amazonaws.com
+```
+
+---
+
+## Access Strapi
+
+Open the output ALB DNS URL in your browser:  
+```
+aviral-strapi-alb-xxxxxxxx.us-east-2.elb.amazonaws.com
+```
+
+---
+
+## AWS Resources Created
+
+- ECS Cluster + Service + Task Definition
+- Application Load Balancer (ALB)
+- Target Group + Listener
+- CloudWatch Logs Group
+- Security Group (Port 1337 + 80 open)
+- IAM Task Roles (provided manually)
+
+---
+
+
+
+## Author
+
+**Aviral Mehndiratta**   
+Intern @ PearlThoughts DevOps Program  
+Location: Jaipur, Rajasthan
