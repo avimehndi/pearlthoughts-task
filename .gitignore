@@ -12,12 +12,4 @@ override.tf.json
 *_override.tf
 *_override.tf.json
 
-# .terraform directory (Terraform working dir and plugins)
-.terraform/
-
-# Sensitive variable files (optional)
-*.tfvars
-*.terraform.lock.hcl
-!terraform.tfvars  # (if you want to keep the main tfvars in git, remove this line if not)
-
 .dockerignore

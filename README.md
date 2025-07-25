@@ -360,3 +360,136 @@ docker-compose down -v
 - [Nginx Docker](https://hub.docker.com/_/nginx)
 
 ---
+
+# Task 4 - Strapi EC2 Deployment via Docker and Terraform
+
+This task demonstrates deploying a Dockerized Strapi application to an AWS EC2 instance using Terraform. It automates infrastructure provisioning, Docker installation, image pulling, and container execution via EC2 User Data.
+
+---
+
+## Project Structure
+
+```
+Strapi-Pipeline-Masters/
+├── my-strapi-project/        # Strapi application folder (Dockerized)
+│   ├── Dockerfile            # Dockerfile for building the Strapi app
+│   ├── .env                  # Environment file (not pushed to repo)
+│   └── ...                   # Strapi app files
+├── terraform/                # Terraform scripts to provision EC2
+│   ├── main.tf
+│   ├── variables.tf
+│   ├── terraform.tfvars
+│   └── user-data.sh
+└── README.md
+```
+
+---
+
+## Deployment Steps
+
+### Prerequisites
+
+- AWS account with an IAM user
+- SSH key pair created in the AWS region
+- Docker Hub account with the Strapi image pushed
+- Terraform installed
+- `.env` file with necessary Strapi environment variables (local use)
+
+---
+### Dockerize Strapi App
+
+In the `my-strapi-project/` folder:
+
+```Dockerfile
+FROM node:20
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files and install dependencies
+COPY package*.json ./
+RUN npm install
+
+# Copy the rest of the app
+COPY . .
+
+# Expose Strapi default port
+EXPOSE 1337
+
+# Run Strapi in development mode
+CMD ["npm", "run", "develop"]
+
+```
+### Build and Push Image:
+
+```bash
+# In the strapi app folder
+docker build -t avimehndi/strapi-app:latest .
+docker push avimehndi/strapi-app:latest
+```
+
+---
+
+### Configure Terraform
+
+Edit the `terraform/terraform.tfvars` file with our values:
+
+```hcl
+region     = "us-east-2"
+key_name   = "my-key-aviral"
+image_name = "avimehndi/strapi-app:latest"
+```
+
+Run the following:
+
+```bash
+cd terraform
+terraform init
+terraform apply
+```
+
+> This provisions a t3.micro EC2 instance, installs Docker, and runs your Strapi app.
+
+---
+
+### Accessing Strapi
+
+- Once the instance passes the 3/3 status checks, access your app via:
+
+```bash
+http://<your-ec2-public-ip>
+```
+
+- To SSH into the instance:
+
+```bash
+ssh -i ~/.ssh/my-key-aviral.pem ubuntu@<public-ip>
+```
+
+---
+
+## Managing the Instance
+
+- **Stop Instance**: Go to AWS Console > EC2 > Instances > Stop
+- **Restart**: Start the instance from the AWS Console
+- **Terminate**: `terraform destroy`
+
+---
+
+## Notes
+
+- `.env` is excluded via `.gitignore`
+- Terraform state files are ignored for safety
+- Docker container auto-restarts unless stopped manually
+- Strapi app runs on port 80 mapped from 1337 inside the container
+
+---
+
+## Final Output
+
+- EC2 instance provisioned via Terraform
+- Docker installed via user-data
+- Strapi container running and accessible via public IP
+
+---
+
