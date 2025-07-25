@@ -19,3 +19,5 @@ override.tf.json
 *.tfvars
 *.terraform.lock.hcl
 !terraform.tfvars  # (if you want to keep the main tfvars in git, remove this line if not)
+
+.dockerignore

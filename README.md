@@ -107,3 +107,85 @@ After running and exploring the project:
   git push -u origin aviral
   ```
 ---
+# Task 2 - Strapi Application (Dockerized)
+
+This task instructs us to Dockerize Strapi CMS application using a **multi-stage build** for optimized image size and security. The Strapi backend is located in the `my-strapi-project` directory.
+
+---
+
+## Project Structure
+
+```
+.
+├── my-strapi-project/
+│   ├── Dockerfile               # Multi-stage Dockerfile
+│   ├── .dockerignore
+│   ├── package.json
+│   ├── package-lock.json
+│   ├── src/
+│   ├── config/
+│   ├── ...
+│   └── .env.example             # Sample env file
+├── README.md
+```
+
+---
+
+## Docker: Multi-Stage Build
+
+The Dockerfile inside `my-strapi-project/` uses multi-stage builds to:
+
+- **Install dependencies** without including them in the final image.
+- **Build the Strapi application** for production use.
+- **Serve with `node` in a clean environment**.
+
+### 🔧 Build Docker Image
+
+Navigate to the project directory:
+
+```bash
+cd my-strapi-project
+```
+
+Then build the Docker image:
+
+```bash
+docker build -t strapi-app .
+```
+
+---
+
+### Run Docker Container
+
+```bash
+docker run -d -p 1337:1337 --name strapi-app strapi-app
+```
+
+Visit [http://localhost:1337](http://localhost:1337) to access your Strapi admin panel.
+
+---
+
+## Common Docker Commands
+
+### Start an existing stopped container:
+```bash
+docker start strapi-app
+```
+
+### Stop the container:
+```bash
+docker stop strapi-app
+```
+
+### View logs:
+```bash
+docker logs -f strapi-app
+```
+
+---
+
+## 🧼 Cleanup
+
+To reduce image size and build context, unnecessary files are excluded using `.dockerignore`. Check that file for optimization settings.
+
+---
