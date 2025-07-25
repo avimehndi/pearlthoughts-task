@@ -493,3 +493,144 @@ ssh -i ~/.ssh/my-key-aviral.pem ubuntu@<public-ip>
 
 ---
 
+# Task 5 - Strapi Deployment on AWS EC2 using Docker, Terraform, and GitHub Actions
+
+This task automates the deployment of a Dockerized Strapi CMS to an AWS EC2 instance using a full CI/CD pipeline powered by GitHub Actions and Terraform.
+
+## Features
+
+- Dockerized Strapi app
+- GitHub Actions CI/CD pipeline
+- AWS EC2 provisioning with Terraform
+- Secrets management with GitHub Secrets
+- Auto-deployment of container using EC2 `user-data` script
+- Publicly accessible Strapi instance
+
+---
+
+## Project Structure
+
+```
+.
+├── my-strapi-project             
+├── main.tf                    # EC2 instance and security group config
+├── variables.tf               # Terraform variables                
+│── user-data.sh               # EC2 bootstrap script for deploying Strapi
+├── .github/
+   └── workflows/
+        ├── ci.yml                # CI pipeline: builds and pushes Docker image
+        └── terraform.yml         # CD pipeline: provisions EC2 using Terraform
+
+```
+
+---
+
+## CI/CD Overview
+
+### `ci.yml` - CI Workflow
+
+- Triggered on every `push` to the `main` branch.
+- Builds the Strapi Docker image.
+- Tags the image with the Git short SHA.
+- Pushes the image to [Docker Hub](https://hub.docker.com/repository/docker/brohan9/strapi-app).
+- Stores the image tag as a GitHub Actions artifact.
+
+### `terraform.yml` - CD Workflow
+
+- Downloads the image tag artifact from the CI pipeline.
+- Applies Terraform code to provision or update the EC2 instance.
+- Passes secrets and Docker tag into EC2 `user_data` script for container launch.
+
+---
+
+## AWS Infrastructure (Terraform)
+
+### Key Resources:
+
+- **EC2 Instance**: Ubuntu instance with Docker installed
+- **Security Group**: Opens port `1337` for public access
+- **User Data**: Bootstraps the instance by pulling and running the Strapi Docker container
+
+---
+
+## user-data.sh
+
+This script is automatically run by the EC2 instance when it boots up.
+
+```bash
+#!/bin/bash
+
+exec > /var/log/user-data.log 2>&1
+
+echo ">>> Installing Docker"
+sudo apt-get update -y
+sudo apt-get install -y docker.io
+sudo systemctl start docker
+sudo systemctl enable docker
+
+echo ">>> Pulling Docker image"
+sudo docker pull brohan9/strapi-app:${docker_tag}
+
+echo ">>> Removing existing container if any"
+sudo docker rm -f strapi || true
+
+echo ">>> Running new Strapi container"
+sudo docker run -d \
+  --name strapi \
+  -p 1337:1337 \
+  --restart unless-stopped \
+  -e APP_KEYS="$APP_KEYS" \
+  -e API_TOKEN_SALT="$API_TOKEN_SALT" \
+  -e ADMIN_JWT_SECRET="$ADMIN_JWT_SECRET" \
+  -e JWT_SECRET="$JWT_SECRET" \
+  brohan9/strapi-app:${docker_tag}
+echo ">>> Done setting up Strapi"
+
+```
+All environment variables are injected manually.
+
+---
+
+## Secrets Used
+
+These are stored securely in GitHub Secrets and injected via the pipeline:
+
+| Secret Name           | Purpose                              |
+|-----------------------|--------------------------------------|
+| `DOCKER_USERNAME`     |  JWT Secret for admin panel login    |
+| `DOCKER_PASSWORD`     | General auth token signing           |
+| `AWS_ACCESS_KEY_ID`   | For Terraform access                 |
+| `AWS_SECRET_ACCESS_KEY` | For Terraform access               |
+
+---
+
+## Accessing Strapi
+
+Once the EC2 instance is up and running, navigate to:
+
+```
+http://<EC2_PUBLIC_IP>:1337
+```
+
+It will automatically redirect to `/admin` to set up your admin account.
+
+---
+
+## Deployment Summary
+
+- Docker image built and pushed via CI pipeline  
+- EC2 instance provisioned using Terraform  
+- Strapi container deployed using EC2 User Data  
+- Secrets injected securely at runtime  
+- Admin dashboard accessible via browser  
+
+---
+
+## Final Notes
+
+- The pipeline is completely automated — no manual SSH or EC2 configuration.
+- This setup is ideal for staging or production use cases.
+- DNS and HTTPS setup can be added as a next step using Nginx and Route53.
+
+---
+
