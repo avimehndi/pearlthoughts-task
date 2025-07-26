@@ -123,7 +123,7 @@ resource "aws_security_group" "ecs_sg" {
 
 # Load Balancer
 resource "aws_lb" "alb" {
-  name               = "aviral-strapi-alb"
+  name               = "new-strapi-alb-aviral"
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.ecs_sg.id]
@@ -151,7 +151,7 @@ resource "aws_db_subnet_group" "db_subnet_group" {
 
 # Target group for ECS tasks
 resource "aws_lb_target_group" "tg" {
-  name        = "aviral-strapi-tg"
+  name        = "aviral-strapi-tg-new"
   port        = 1337
   protocol    = "HTTP"
   vpc_id      = data.aws_vpc.default.id
