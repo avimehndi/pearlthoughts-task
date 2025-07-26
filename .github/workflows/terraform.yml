@@ -1,4 +1,4 @@
-name: Deploy to ECS
+name: Terraform Deploy
 
 on:
   workflow_run:
