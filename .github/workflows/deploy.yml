@@ -11,15 +11,9 @@ jobs:
 
     env:
       AWS_REGION: us-east-2
-      CONTAINER_NAME: aviral-strapi-container
-      ALB_NAME: aviral-strapi-alb
-      ECS_CLUSTER: aviral-strapi-cluster
-      ECS_SERVICE: aviral-strapi-service
-      ECS_TASK_DEFINITION: aviral-strapi-tasks
-      ECR_REPO: 607700977843.dkr.ecr.us-east-2.amazonaws.com/strapi-app-aviral    
-      IMAGE_TAG: latest
-      IMAGE_URI: 607700977843.dkr.ecr.us-east-2.amazonaws.com/strapi-app-aviral:latest
-
+      ECR_REPO: 607700977843.dkr.ecr.us-east-2.amazonaws.com/strapi-app-aviral   
+      IMAGE_TAG: v2-github-actions
+      
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
