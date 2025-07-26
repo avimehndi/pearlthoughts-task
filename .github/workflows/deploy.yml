@@ -58,7 +58,22 @@ jobs:
           cd terraform
           terraform init
 
+      - name: Debug image var
+        run: |
+            echo "Image: $IMAGE_URL"
+            cd terraform
+            terraform init
+            terraform validate
+            terraform plan -var="image_url=$IMAGE_URL"
+            terraform apply -auto-approve -var="image_url=$IMAGE_URL"
+
       - name: Apply Terraform with new image
         run: |
           cd terraform
-          terraform apply -auto-approve 
+          terraform apply -auto-approve -var="ecr_image_url=${{ env.IMAGE_URL }}"
+        env:
+            IMAGE_URL: ${{ steps.login-ecr.outputs.image }}  
+            AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            AWS_REGION: ${{ env.AWS_REGION }}
+          
