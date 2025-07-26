@@ -14,8 +14,8 @@ data "aws_subnets" "default" {
 }
 
 # Security group for ECS service
-resource "aws_security_group" "aviral_sg" {
-  name        = "aviral-sg"
+resource "aws_security_group" "aviral_sg_new" {
+  name        = "aviral-sg-new"
   description = "Allow HTTP/Strapi traffic"
   vpc_id      = data.aws_vpc.default.id
 
@@ -63,8 +63,8 @@ resource "aws_lb" "aviral_alb" {
 
 
 
-resource "aws_lb_target_group" "aviral_tg" {
-  name        = "aviral-tg"
+resource "aws_lb_target_group" "aviral_tg_new" {
+  name        = "aviral-tg-new"
   port        = 1337
   protocol    = "HTTP"
   vpc_id      = data.aws_vpc.default.id
@@ -97,13 +97,13 @@ resource "aws_ecs_cluster" "aviral_cluster" {
   name = "aviral-cluster"
 }
 
-resource "aws_cloudwatch_log_group" "tohid_strapi" {
-  name              = "/ecs/aviral-strapi"
+resource "aws_cloudwatch_log_group" "aviral_strapi_new" {
+  name              = "/ecs/aviral-strapi-new"
   retention_in_days = 7
 }
 
-resource "aws_iam_role" "ecs_task_execution_role_aviral" {
-  name = "ecsTaskExecutionRole-aviral"
+resource "aws_iam_role" "ecs_task_execution_role_aviral_new" {
+  name = "ecsTaskExecutionRole-aviral-new"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -118,7 +118,7 @@ resource "aws_iam_role" "ecs_task_execution_role_aviral" {
 }
 
 resource "aws_iam_role_policy_attachment" "ecs_execution_policy" {
-  role       = aws_iam_role.ecs_task_execution_role_aviral.name
+  role       = aws_iam_role.ecs_task_execution_role_aviral_new.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
