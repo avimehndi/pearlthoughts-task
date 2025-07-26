@@ -1,2 +1,3 @@
-db_username = "strapiadmin"
-db_password = "SuperSecurePass123"
+
+db_username = "admin"
+db_password = "supersecret"
