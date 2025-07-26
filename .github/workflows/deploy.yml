@@ -39,7 +39,7 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t $ECR_REPO:$TAG ./my-strapi
+          docker build -t $ECR_REPO:$TAG .
           docker tag $ECR_REPO:$TAG ${{ secrets.ECR_REGISTRY }}/$ECR_REPO:$TAG
           docker push ${{ secrets.ECR_REGISTRY }}/$ECR_REPO:$TAG
 
