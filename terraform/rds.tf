@@ -1,5 +1,5 @@
 resource "aws_db_subnet_group" "strapiapp_db_subnet_group" {
-  name       = "strapiapp-db-subnet-group-aviral"  # Add a suffix
+  name       = "strapiapp-db-subnet-group-aviral-new"  # Add a suffix
   subnet_ids = data.aws_subnets.default.ids
 
   tags = {
@@ -22,6 +22,6 @@ resource "aws_db_instance" "aviral_rds" {
   publicly_accessible    = true
 
   tags = {
-    Name = "aviral RDS Instance"
+    Name = "aviral RDS Instance New"
   }
 }
