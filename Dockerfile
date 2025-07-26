@@ -1,31 +1,23 @@
-# === Build stage ===
-FROM node:20-alpine as build
+# Use Node.js base image
+FROM node:20
 
 # Set working directory
 WORKDIR /app
 
-# Copy package files and install dependencies
-COPY package.json yarn.lock ./
-RUN yarn install
+# Copy only package.json and package-lock.json
+COPY package*.json package-lock.json ./
 
-# Copy all files and build admin panel
+# Install dependencies inside Docker (builds native modules here)
+RUN npm install
+
+# Copy the rest of the app
 COPY . .
-RUN yarn build
 
-# === Production stage ===
-FROM node:20-alpine as production
+# Rebuild better-sqlite3 inside container
+RUN npm rebuild better-sqlite3
 
-# Set working directory
-WORKDIR /app
-
-# Copy only necessary files from build
-COPY --from=build /app ./
-
-# Install only production dependencies
-RUN yarn install --production
-
-# Expose Strapi port
+# Expose port
 EXPOSE 1337
 
-# Start Strapi
-CMD ["yarn", "start"]
+# Start the app
+CMD ["npm", "run", "develop"]
