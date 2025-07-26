@@ -185,12 +185,12 @@ resource "aws_ecs_service" "aviral_service" {
 
   network_configuration {
     subnets         = data.aws_subnets.default.ids
-    security_groups = [aws_security_group.aviral_sg.id]
+    security_groups = [aws_security_group.aviral_sg_new.id]
     assign_public_ip = true
   }
 
   load_balancer {
-    target_group_arn = aws_lb_target_group.aviral_tg.arn
+    target_group_arn = aws_lb_target_group.aviral_tg_new.arn
     container_name   = "strapi"
     container_port   = 1337
   }
