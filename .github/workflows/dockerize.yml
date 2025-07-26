@@ -26,13 +26,23 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Login to Amazon ECR
+      - name: Log in to Amazon ECR
+        id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
-    
-      - name: Build and Push Docker Image
+
+      - name: Extract short commit SHA
+        id: vars
+        run: echo "TAG=$(echo $GITHUB_SHA | cut -c1-7)" >> $GITHUB_ENV
+
+      - name: Build Docker image
         run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+            IMAGE_URL=${{ env.ECR_REGISTRY }}/${{ env.ECR_REPO_NAME }}:$TAG
+            docker build -t $IMAGE_URL .
+            echo "IMAGE_URL=$IMAGE_URL" >> $GITHUB_ENV
+
+      - name: Push Docker image to ECR
+        run: |
+            docker push $IMAGE_URL
 
       - name: Output ECR Image URL
         run: |
