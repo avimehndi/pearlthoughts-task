@@ -13,9 +13,8 @@ data "aws_subnets" "default" {
   }
 }
 
-# Security group for ECS service
-resource "aws_security_group" "aviral_sg_new" {
-  name        = "aviral-sg-new"
+resource "aws_security_group" "avi_security_group" {
+  name        = "avi-sg"
   description = "Allow HTTP/Strapi traffic"
   vpc_id      = data.aws_vpc.default.id
 
@@ -53,18 +52,16 @@ resource "aws_lb" "aviral_alb_new" {
   internal           = false
   load_balancer_type = "application"
   subnets = [
-    "subnet-0c0bb5df2571165a9", # us-east-2a
-    "subnet-0cc2ddb32492bcc41", # us-east-2b
-    "subnet-0f768008c6324831f"  # us-east-2c
+    "subnet-0c0bb5df2571165a9",
+    "subnet-0cc2ddb32492bcc41",
+    "subnet-0f768008c6324831f"
   ]
-  security_groups = [aws_security_group.aviral_sg_new.id]
+  security_groups = [aws_security_group.avi_security_group.id]
   enable_deletion_protection = false
 }
 
-
-
-resource "aws_lb_target_group" "aviral_tg_new" {
-  name        = "aviral-tg-new"
+resource "aws_lb_target_group" "avi_target_group" {
+  name        = "avi-target-group"
   port        = 1337
   protocol    = "HTTP"
   vpc_id      = data.aws_vpc.default.id
@@ -89,21 +86,21 @@ resource "aws_lb_listener" "http" {
 
   default_action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.aviral_tg_new.arn
+    target_group_arn = aws_lb_target_group.avi_target_group.arn
   }
 }
 
-resource "aws_ecs_cluster" "aviral_cluster" {
-  name = "aviral-cluster"
+resource "aws_ecs_cluster" "avi_ecs_cluster" {
+  name = "avi-ecs-cluster"
 }
 
-resource "aws_cloudwatch_log_group" "aviral_strapi_new" {
-  name              = "/ecs/aviral-strapi-new"
+resource "aws_cloudwatch_log_group" "avi_log_group" {
+  name              = "/ecs/avi-strapi-log"
   retention_in_days = 7
 }
 
-resource "aws_iam_role" "ecs_task_execution_role_aviral_new" {
-  name = "ecsTaskExecutionRole-aviral-new"
+resource "aws_iam_role" "avi_ecs_execution_role" {
+  name = "avi-ecs-execution-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -118,7 +115,7 @@ resource "aws_iam_role" "ecs_task_execution_role_aviral_new" {
 }
 
 resource "aws_iam_role_policy_attachment" "ecs_execution_policy" {
-  role       = aws_iam_role.ecs_task_execution_role_aviral_new.name
+  role       = aws_iam_role.avi_ecs_execution_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
@@ -128,8 +125,8 @@ resource "aws_ecs_task_definition" "aviral_task" {
   network_mode             = "awsvpc"
   cpu                      = "512"
   memory                   = "1024"
-  execution_role_arn       = aws_iam_role.ecs_task_execution_role_aviral_new.arn
-  task_role_arn            = aws_iam_role.ecs_task_execution_role_aviral_new.arn
+  execution_role_arn       = aws_iam_role.avi_ecs_execution_role.arn
+  task_role_arn            = aws_iam_role.avi_ecs_execution_role.arn
 
   container_definitions = jsonencode([
     {
@@ -145,7 +142,7 @@ resource "aws_ecs_task_definition" "aviral_task" {
       logConfiguration = {
         logDriver = "awslogs",
         options = {
-          awslogs-group         = "/ecs/aviral-strapi",
+          awslogs-group         = aws_cloudwatch_log_group.avi_log_group.name,
           awslogs-region        = "us-east-2",
           awslogs-stream-prefix = "ecs"
         }
@@ -158,13 +155,7 @@ resource "aws_ecs_task_definition" "aviral_task" {
         { name = "DATABASE_USERNAME", value = "aviral" },
         { name = "DATABASE_PASSWORD", value = "aviral123" },
         { name = "DATABASE_SSL", value = "false" },
-        { name = "DATABASE_PORT", value = "5432" },
-        { name = "DATABASE_NAME", value = "strapidb" },
-        { name = "DATABASE_USERNAME", value = "aviral" },
-        { name = "DATABASE_PASSWORD", value = "aviral123" },
-        { name = "DATABASE_SSL", value = "false" },
 
-        # Strapi secrets
         { name = "APP_KEYS", value = "468cnhT7DiBFuGxUXVh8tA==,0ijw28sTuKb2Xi2luHX6zQ==,TfN3QRc00kFU3Qtg320QNg==,hHRI+D6KWZ0g5PER1WanWw==" },
         { name = "API_TOKEN_SALT", value = "PmzN60QIfFJBz4tGtWWrDg==" },
         { name = "ADMIN_JWT_SECRET", value = "YBeqRecVoyQg7PJGSLv1hg==" },
@@ -177,7 +168,7 @@ resource "aws_ecs_task_definition" "aviral_task" {
 
 resource "aws_ecs_service" "aviral_service" {
   name            = "aviral-service"
-  cluster         = aws_ecs_cluster.aviral_cluster.id
+  cluster         = aws_ecs_cluster.avi_ecs_cluster.id
   task_definition = aws_ecs_task_definition.aviral_task.arn
   launch_type     = "FARGATE"
   desired_count   = 1
@@ -185,12 +176,12 @@ resource "aws_ecs_service" "aviral_service" {
 
   network_configuration {
     subnets         = data.aws_subnets.default.ids
-    security_groups = [aws_security_group.aviral_sg_new.id]
+    security_groups = [aws_security_group.avi_security_group.id]
     assign_public_ip = true
   }
 
   load_balancer {
-    target_group_arn = aws_lb_target_group.aviral_tg_new.arn
+    target_group_arn = aws_lb_target_group.avi_target_group.arn
     container_name   = "strapi"
     container_port   = 1337
   }
