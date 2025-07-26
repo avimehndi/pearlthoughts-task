@@ -89,7 +89,7 @@ resource "aws_lb_listener" "http" {
 
   default_action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.aviral_tg.arn
+    target_group_arn = aws_lb_target_group.aviral_tg_new.arn
   }
 }
 
@@ -128,8 +128,8 @@ resource "aws_ecs_task_definition" "aviral_task" {
   network_mode             = "awsvpc"
   cpu                      = "512"
   memory                   = "1024"
-  execution_role_arn       = aws_iam_role.ecs_task_execution_role_aviral.arn
-  task_role_arn            = aws_iam_role.ecs_task_execution_role_aviral.arn
+  execution_role_arn       = aws_iam_role.ecs_task_execution_role_aviral_new.arn
+  task_role_arn            = aws_iam_role.ecs_task_execution_role_aviral_new.arn
 
   container_definitions = jsonencode([
     {
