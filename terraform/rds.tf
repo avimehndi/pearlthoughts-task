@@ -1,5 +1,5 @@
 resource "aws_db_subnet_group" "strapiapp_db_subnet_group" {
-  name       = "strapiapp-db-subnet-group"
+  name       = "strapiapp-db-subnet-group-aviral"  # Add a suffix
   subnet_ids = data.aws_subnets.default.ids
 
   tags = {
@@ -16,7 +16,7 @@ resource "aws_db_instance" "aviral_rds" {
   db_name                = "strapidb"
   username               = "aviral"
   password               = "aviral123"
-  db_subnet_group_name   = aws_db_subnet_group.strapiapp_db_subnet_group.name
+  db_subnet_group_name = aws_db_subnet_group.strapiapp_db_subnet_group.name
   vpc_security_group_ids = [aws_security_group.aviral_sg.id]
   skip_final_snapshot    = true
   publicly_accessible    = true
