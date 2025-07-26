@@ -84,7 +84,7 @@ resource "aws_ecs_task_definition" "strapi_task" {
 }
 
 resource "aws_security_group" "ecs_sg" {
-  name        = "aviral-strapi-ecs-sg2"
+  name        = "aviral-strapi-ecs-sg"
   description = "Allow HTTP from anywhere and Postgres traffic within SG"
   vpc_id      = data.aws_vpc.default.id
 
