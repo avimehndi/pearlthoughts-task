@@ -117,6 +117,9 @@ resource "aws_security_group" "ecs_sg" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
+  tags = {
+    Name = "AviralStrapiECSSG"
+  }
 
   
 }
