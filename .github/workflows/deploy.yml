@@ -7,9 +7,7 @@ on:
 
 env:
   AWS_REGION: us-east-2
-  ECR_REPO: strapi-app-aviral
-  IMAGE_TAG: latest
-  ECR_REGISTRY: 607700977843.dkr.ecr.us-east-2.amazonaws.com
+  ECR_REPO: 607700977843.dkr.ecr.us-east-2.amazonaws.com/strapi-app-aviral
   CONTAINER_NAME: aviral-strapi-new
   ECS_CLUSTER: aviral-strapi-cluster
   ECS_SERVICE: aviral_strapi_service
