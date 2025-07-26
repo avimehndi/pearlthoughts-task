@@ -1,5 +1,19 @@
-output "strapi_url" {
-  description = "Public URL to access Strapi"
-  value       = "http://${aws_lb.aviral_alb_new.dns_name}"
+variable "region" {
+  default = "us-east-2"  
 }
 
+variable "instance_type" {
+  default = "t2.micro"
+}
+
+variable "key_name" {
+  description = "Name of your existing EC2 Key Pair"
+  default     = "my-key-aviral"
+}
+variable "db_username" {}
+variable "db_password" {}
+
+variable "image_uri" {
+  description = "The full ECR image URI"
+  type        = string
+}
