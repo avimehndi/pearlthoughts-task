@@ -26,46 +26,14 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Log in to Amazon ECR
-        id: login-ecr
+      - name: Login to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Extract short commit SHA
-        id: vars
-        run: echo "TAG=$(echo $GITHUB_SHA | cut -c1-7)" >> $GITHUB_ENV
-
-      - name: Build Docker image
+    
+      - name: Build and Push Docker Image
         run: |
-            IMAGE_URL=${{ env.ECR_REGISTRY }}/${{ env.ECR_REPO_NAME }}:$TAG
-            docker build -t $IMAGE_URL .
-            echo "IMAGE_URL=$IMAGE_URL" >> $GITHUB_ENV
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
 
-      - name: Push Docker image to ECR
+      - name: Output ECR Image URL
         run: |
-            docker push $IMAGE_URL
-
-      - name: Describe and update ECS task definition
-        run: |
-          aws ecs describe-task-definition \
-            --task-definition $ECS_TASK_DEFINITION \
-            --query taskDefinition \
-            > old-task-def.json
-
-          jq --arg IMAGE "$IMAGE_URI" \
-            '.containerDefinitions[0].image = $IMAGE |
-             del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)' \
-            old-task-def.json > new-task-def.json
-
-          NEW_TASK_DEF_ARN=$(aws ecs register-task-definition \
-            --cli-input-json file://new-task-def.json \
-            --query 'taskDefinition.taskDefinitionArn' \
-            --output text)
-
-          echo "NEW_TASK_DEF_ARN=$NEW_TASK_DEF_ARN" >> $GITHUB_ENV
-
-      - name: Update ECS service to use new task definition
-        run: |
-          aws ecs update-service \
-            --cluster $ECS_CLUSTER \
-            --service $ECS_SERVICE \
-            --task-definition $NEW_TASK_DEF_ARN
+          echo "Image pushed: $ECR_REGISTRY/$ECR_REPOSITORY:latest"
