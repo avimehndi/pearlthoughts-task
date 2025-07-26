@@ -5,6 +5,9 @@ on:
 
 env:
   AWS_REGION: us-east-2
+  ECR_REGISTRY: 607700977843.dkr.ecr.us-east-2.amazonaws.com
+  ECR_REPOSITORY: strapi-app-ecs-pg
+
 
 jobs:
   terraform-deploy:
