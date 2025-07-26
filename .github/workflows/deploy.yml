@@ -63,7 +63,6 @@ jobs:
             echo "Image: $IMAGE_URL"
             cd terraform
             terraform init
-            terraform validate
             terraform plan -var="image_url=$IMAGE_URL"
             terraform apply -auto-approve -var="image_url=$IMAGE_URL"
 
