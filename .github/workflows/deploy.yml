@@ -7,7 +7,9 @@ on:
 
 env:
   AWS_REGION: us-east-2
-  ECR_REPO: 607700977843.dkr.ecr.us-east-2.amazonaws.com/strapi-app-aviral
+  ECR_REPO: strapi-app-aviral
+  ECR_REGISTRY: 607700977843.dkr.ecr.us-east-2.amazonaws.com
+
   CONTAINER_NAME: aviral-strapi-new
   ECS_CLUSTER: aviral-strapi-cluster
   ECS_SERVICE: aviral_strapi_service
@@ -39,15 +41,17 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t $ECR_REPO:$TAG .
-          docker tag $ECR_REPO:$TAG ${{ secrets.ECR_REGISTRY }}/$ECR_REPO:$TAG
-          docker push ${{ secrets.ECR_REGISTRY }}/$ECR_REPO:$TAG
+            docker build -t $ECR_REGISTRY/$ECR_REPO:$TAG .
+
+      - name: Push Docker image to ECR
+        run: |
+            docker push $ECR_REGISTRY/$ECR_REPO:$TAG
 
       - name: Apply Terraform with image and secrets
         run: |
-          cd terraform
-          terraform init
-          terraform apply -auto-approve \
-            -var="image_uri=${{ secrets.ECR_REGISTRY }}/$ECR_REPO:$TAG" \
+            cd terraform
+            terraform init
+            terraform apply -auto-approve \
+            -var="image_uri=${{ env.ECR_REGISTRY }}/${{ env.ECR_REPO }}:${{ env.TAG }}" \
             -var="db_username=${{ secrets.DB_USERNAME }}" \
             -var="db_password=${{ secrets.DB_PASSWORD }}"
