@@ -42,6 +42,10 @@ jobs:
           ECR_REGISTRY: ${{ env.ECR_REGISTRY }}
           ECR_REPOSITORY: ${{ env.ECR_REPOSITORY }}
 
+      - name: Get Docker Image URI
+        id: ecr-image
+        run: echo "IMAGE=${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}" >> $GITHUB_ENV
+
       - name: Set image URL output
         id: image-url
         run: echo "IMAGE_URL=$ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}" >> $GITHUB_ENV  
@@ -59,6 +63,7 @@ jobs:
           cd terraform
           terraform apply -auto-approve -var="ecr_image_url=${{ env.IMAGE_URL }}"
         env:
+            IMAGE_URL: ${{ steps.login-ecr.outputs.image }}  
             AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
             AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
             AWS_REGION: ${{ env.AWS_REGION }}
