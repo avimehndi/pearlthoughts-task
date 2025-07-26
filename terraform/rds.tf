@@ -17,7 +17,7 @@ resource "aws_db_instance" "aviral_rds" {
   username               = "aviral"
   password               = "aviral123"
   db_subnet_group_name = aws_db_subnet_group.strapiapp_db_subnet_group.name
-  vpc_security_group_ids = [aws_security_group.aviral_sg.id]
+  vpc_security_group_ids = [aws_security_group.aviral_sg_new.id]
   skip_final_snapshot    = true
   publicly_accessible    = true
 
