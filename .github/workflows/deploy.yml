@@ -1,69 +1,53 @@
-name: Deploy Strapi to AWS ECS Fargate
+name: Deploy Strapi to ECS
 
 on:
   push:
     branches:
       - main
 
+env:
+  AWS_REGION: us-east-2
+  ECR_REPO: strapi-app-aviral
+  CONTAINER_NAME: aviral-strapi-new
+  ECS_CLUSTER: aviral-strapi-cluster-new
+  ECS_SERVICE: aviral-strapi-service-new
+  ECS_TASK_DEFINITION: aviral-strapi-newtask
+
 jobs:
   deploy:
+    name: Build and Deploy to ECS
     runs-on: ubuntu-latest
 
-    env:
-      AWS_REGION: us-east-2
-      ECR_REPOSITORY: strapi-app-aviral
-      ECR_REGISTRY: 607700977843.dkr.ecr.us-east-2.amazonaws.com
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
-      - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v2
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-region: ${{ env.AWS_REGION }}
 
-      - name: Login to Amazon ECR
+      - name: Log in to Amazon ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
+        uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build, tag, and push Docker image to ECR
+      - name: Extract short commit SHA
+        id: vars
+        run: echo "TAG=$(echo $GITHUB_SHA | cut -c1-7)" >> $GITHUB_ENV
+
+      - name: Build Docker image
         run: |
-          IMAGE_TAG=${{ github.sha }}
-          docker build -t $ECR_REPOSITORY:$IMAGE_TAG .
-          docker tag $ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          echo "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" > image.txt
-        env:
-          ECR_REGISTRY: ${{ env.ECR_REGISTRY }}
-          ECR_REPOSITORY: ${{ env.ECR_REPOSITORY }}
+          docker build -t $ECR_REPO:$TAG ./my-strapi
+          docker tag $ECR_REPO:$TAG ${{ secrets.ECR_REGISTRY }}/$ECR_REPO:$TAG
+          docker push ${{ secrets.ECR_REGISTRY }}/$ECR_REPO:$TAG
 
-      - name: Upload image URL artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: image-url
-          path: image.txt
-
-      - name: Download image URL artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: image-url
-
-      - name: Read image URL into environment variable
-        id: read-image
-        run: echo "IMAGE_URL=$(cat image.txt)" >> $GITHUB_ENV
-
-      - name: Initialize Terraform
+      - name: Apply Terraform with image and secrets
         run: |
           cd terraform
           terraform init
-
-      - name: Apply Terraform with new image
-        run: |
-          cd terraform
-          terraform apply -auto-approve -var="image_uri=${{ env.IMAGE_URL }}"
+          terraform apply -auto-approve \
+            -var="image_uri=${{ secrets.ECR_REGISTRY }}/$ECR_REPO:$TAG" \
+            -var="db_username=${{ secrets.DB_USERNAME }}" \
+            -var="db_password=${{ secrets.DB_PASSWORD }}"
