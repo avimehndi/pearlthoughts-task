@@ -48,8 +48,8 @@ resource "aws_security_group" "aviral_sg_new" {
   }
 }
 
-resource "aws_lb" "aviral_alb" {
-  name               = "aviral"
+resource "aws_lb" "aviral_alb_new" {
+  name               = "aviral-alb-new"
   internal           = false
   load_balancer_type = "application"
   subnets = [
@@ -83,7 +83,7 @@ resource "aws_lb_target_group" "aviral_tg_new" {
 }
 
 resource "aws_lb_listener" "http" {
-  load_balancer_arn = aws_lb.aviral_alb.arn
+  load_balancer_arn = aws_lb.aviral_alb_new.arn
   port              = 80
   protocol          = "HTTP"
 
