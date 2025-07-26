@@ -7,7 +7,7 @@ resource "aws_db_subnet_group" "strapiapp_db_subnet_group" {
   }
 }
 
-resource "aws_db_instance" "tohid_rds" {
+resource "aws_db_instance" "aviral_rds" {
   allocated_storage      = 20
   storage_type           = "gp2"
   engine                 = "postgres"

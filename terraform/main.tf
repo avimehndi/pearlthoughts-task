@@ -57,7 +57,7 @@ resource "aws_lb" "aviral_alb" {
     "subnet-0cc2ddb32492bcc41", # us-east-2b
     "subnet-0f768008c6324831f"  # us-east-2c
   ]
-  security_groups = [aws_security_group.tohid_ecr_sg.id]
+  security_groups = [aws_security_group.aviral_sg.id]
   enable_deletion_protection = false
 }
 
@@ -152,7 +152,12 @@ resource "aws_ecs_task_definition" "aviral_task" {
       }
       environment = [
         { name = "DATABASE_CLIENT", value = "postgres" },
-        { name = "DATABASE_HOST", value = aws_db_instance.aviral_db.address },
+        { name = "DATABASE_HOST", value = aws_db_instance.aviral_rds.address },
+        { name = "DATABASE_PORT", value = "5432" },
+        { name = "DATABASE_NAME", value = "strapidb" },
+        { name = "DATABASE_USERNAME", value = "aviral" },
+        { name = "DATABASE_PASSWORD", value = "aviral123" },
+        { name = "DATABASE_SSL", value = "false" },
         { name = "DATABASE_PORT", value = "5432" },
         { name = "DATABASE_NAME", value = "strapidb" },
         { name = "DATABASE_USERNAME", value = "aviral" },
