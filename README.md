@@ -739,7 +739,107 @@ aviral-strapi-alb-xxxxxxxx.us-east-2.elb.amazonaws.com
 
 ---
 
+# Task 7 - Strapi Deployment on AWS ECS using Terraform & GitHub Actions
 
+This task demonstrates how to deploy a Strapi application to AWS ECS Fargate using Terraform for infrastructure provisioning and GitHub Actions for CI/CD automation.
+
+---
+
+## Project Structure
+
+```
+.
+├── .github
+│   └── workflows
+│       ├── deploy.yml           
+│       └── terraform.yml        
+├── Dockerfile                   
+├── package.json                 
+├── package-lock.json
+├── terraform                    
+│   ├── main.tf                 
+│   ├── outputs.tf             
+│   ├── terraform.tfvars         
+│   └── variables.tf             
+```
+
+---
+
+✅ Features
+- Infrastructure as Code with Terraform
+- CI/CD pipeline via GitHub Actions
+- Container deployment to AWS ECS Fargate
+- Uses SQLite (no need for external database)
+- ECR image build and deployment
+- Environment variables managed via Terraform
+
+---
+
+## 🔧 Setup Instructions
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/<your-username>/strapi-ecs-pipeline.git
+cd strapi-ecs-pipeline
+```
+
+### 2. Configure GitHub Secrets
+In your GitHub repo:
+
+Go to Settings → Secrets and variables → Actions → New repository secret and add the following:
+
+| Secret Name           | Description                          |
+|-----------------------|--------------------------------------|
+| `DOCKER_USERNAME`     |  JWT Secret for admin panel login    |
+| `DOCKER_PASSWORD`     | General auth token signing           |
+| `AWS_ACCESS_KEY_ID`   | For Terraform access                 |
+| `AWS_SECRET_ACCESS_KEY` | For Terraform access               |
+
+## GitHub Actions Workflows
+
+| Workflow        | Trigger                                       | Description                                |
+| --------------- | -----------------                             | ------------------------------------------ |
+| `deploy.yml`    | On push to `main`                             | Builds Docker image & pushes to ECR        |
+| `terraform.yml` | Successful completion of previous workflow    | Runs `terraform init`, `plan`, and `apply` |
+
+---
+
+## Verification Steps
+
+After deployment is complete, verify the setup:
+
+1. Check ECS Service
+
+  - Go to AWS Console → ECS → Clusters
+  - Open the created cluster
+  - Ensure a task is running and healthy under the service
+
+2. Check Load Balancer
+
+  - Go to AWS Console → EC2 → Load Balancers
+  - Copy the DNS name of the Application Load Balancer
+  - Open it in a browser (http://<ALB-DNS>) to access Strapi
+
+3. Check CloudWatch Logs
+
+  - Go to AWS Console → CloudWatch → Log groups
+  - Confirm logs are being collected from the ECS Task
+
+4. Login to Strapi Admin
+  
+  - If first time: You'll see a registration form to create an admin
+  - After setup: Access /admin for CMS dashboard
+
+---
+
+## Notes:
+
+ -  This deployment uses SQLite — no external DB setup needed.
+ -  Your ECS Task Definition mounts the SQLite .tmp/data.db file inside the container.
+ -  Ideal for quick deployments, PoCs, or minimal infra setups.
+
+---
 
 ## Author
 
