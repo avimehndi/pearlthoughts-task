@@ -8,7 +8,7 @@ on:
 
 env:
   AWS_REGION: us-east-2
-  ECR_REPOSITORY: strapi-app-ecs-pg
+  ECR_REPOSITORY: strapi-app-aviral
   ECR_REGISTRY: 607700977843.dkr.ecr.us-east-2.amazonaws.com
   IMAGE_TAG: latest
 
@@ -51,8 +51,3 @@ jobs:
       - name: Terraform Apply
         run: terraform apply -auto-approve -input=false
 
-      - name: Upload terraform.tfstate as artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: terraform-state
-          path: ./terraform/terraform.tfstate

@@ -1,10 +1,15 @@
 provider "aws" {
-  region = "us-east-2"
+  region = var.region
 }
 
 # Use default VPC
 data "aws_vpc" "default" {
   default = true
+}
+
+resource "aws_cloudwatch_log_group" "strapi_log_group" {
+  name              = "/ecs/strapi-app-aviral-latest"
+  retention_in_days = 7
 }
 
 # Get default subnets in the default VPC
@@ -31,6 +36,7 @@ resource "aws_ecs_task_definition" "strapi_task" {
   network_mode             = "awsvpc"
   execution_role_arn       = var.ecs_task_execution_role_arn
   task_role_arn            = var.ecs_task_execution_role_arn
+
   container_definitions = jsonencode([
     {
       name      = "strapi"
@@ -43,15 +49,14 @@ resource "aws_ecs_task_definition" "strapi_task" {
           protocol      = "tcp"
         }
       ],
-      essential = true,
       environment = [
         {
           name  = "NODE_ENV"
           value = "production"
         },
         {
-        name  = "DATABASE_URL"
-        value = "postgresql://${var.db_username}:${var.db_password}@aviral-strapi-postgres.cbymg2mgkcu2.us-east-2.rds.amazonaws.com:5432/${var.db_name}"
+          name  = "DATABASE_URL"
+          value = "postgresql://${var.db_username}:${var.db_password}@aviral-strapi-postgres.cbymg2mgkcu2.us-east-2.rds.amazonaws.com:5432/${var.db_name}"
         },
         {
           name  = "APP_KEYS"
@@ -76,9 +81,16 @@ resource "aws_ecs_task_definition" "strapi_task" {
         {
           name  = "ENCRYPTION_KEY"
           value = "oQQVoC1EbAsvD0UUeGNHDA=="
-        },
-        
-      ]
+        }
+      ],
+      logConfiguration = {
+        logDriver = "awslogs",
+        options = {
+          awslogs-group         = "/ecs/strapi-app-aviral-latest",
+          awslogs-region        = var.region,
+          awslogs-stream-prefix = "ecs"
+        }
+      }
     }
   ])
 }

@@ -7,8 +7,8 @@ on:
 
 env:
   AWS_REGION: us-east-2
-  ECR_REPOSITORY: strapi-app-aviral
   ECR_REGISTRY: 607700977843.dkr.ecr.us-east-2.amazonaws.com
+  ECR_REPOSITORY: strapi-app-aviral
   IMAGE_TAG: latest
 
 
