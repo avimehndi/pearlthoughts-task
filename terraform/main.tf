@@ -220,7 +220,7 @@ resource "aws_db_instance" "postgres" {
 
 ## ECS Service
 resource "aws_ecs_service" "strapi_service" {
-  name            = "aviral-strapi-service"
+  name            = "aviral-strapi-service_v2"
   cluster         = aws_ecs_cluster.strapi_cluster.id
   task_definition = aws_ecs_task_definition.strapi_task.arn
   desired_count   = 1
