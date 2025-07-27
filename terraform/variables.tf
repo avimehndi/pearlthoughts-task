@@ -1,30 +1,46 @@
 variable "region" {
-  description = "AWS region"
-  default     = "us-east-2" # change as needed
+  description = "AWS Region to deploy resources in"
+  type        = string
+  default     = "us-east-2"
 }
 
-variable "ecs_task_execution_role_arn" {
-  description = "IAM role ARN for ECS task execution"
-  default     = "arn:aws:iam::607700977843:role/ecs-task-execution-role"
+variable "execution_role_arn" {
+  description = "ECS task execution role ARN"
+  type        = string
 }
 
-variable "strapi_image_tag" {
-  description = "ECR image tag for Strapi app"
-  default     = "latest"
+variable "task_role_arn" {
+  description = "ECS task IAM role ARN"
+  type        = string
 }
 
-variable "db_username" {
-  description = "RDS database username"
-  default     = "strapi_user"
+variable "container_image" {
+  description = "Docker image to deploy"
+  type        = string
 }
 
-variable "db_password" {
-  description = "RDS database password"
-  default     = "strapi123" 
+# ENV-LIKE VARIABLES for Strapi
+
+variable "app_keys" {
+  description = "APP_KEYS used by Strapi"
+  type        = string
   sensitive   = true
 }
 
-variable "db_name" {
-  description = "RDS database name"
-  default     = "strapi"
+variable "admin_jwt_secret" {
+  description = "ADMIN_JWT_SECRET for Strapi admin"
+  type        = string
+  sensitive   = true
+}
+
+variable "jwt_secret" {
+  description = "JWT_SECRET for Strapi"
+  type        = string
+  sensitive   = true
+}
+
+variable "api_token_salt" {
+  description = "API_TOKEN_SALT for Strapi"
+  type        = string
+  sensitive   = true
 }

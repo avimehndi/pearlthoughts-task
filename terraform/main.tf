@@ -1,103 +1,21 @@
 provider "aws" {
-  region = var.region
+  region     = var.region
 }
 
-# Use default VPC
 data "aws_vpc" "default" {
   default = true
 }
 
+# CloudWatch Log Group
 resource "aws_cloudwatch_log_group" "strapi_log_group" {
-  name              = "/ecs/strapi-app-aviral-latest"
+  name              = "/ecs/strapi-app-avi"
   retention_in_days = 7
 }
 
-# Get default subnets in the default VPC
-data "aws_subnets" "default" {
-  filter {
-    name   = "vpc-id"
-    values = [data.aws_vpc.default.id]
-  }
-}
-
-data "aws_availability_zones" "available" {
-  state = "available"
-}
-
-resource "aws_ecs_cluster" "strapi_cluster" {
-  name = "aviral-strapi-cluster2"
-}
-
-resource "aws_ecs_task_definition" "strapi_task" {
-  family                   = "aviral-strapi-task"
-  requires_compatibilities = ["FARGATE"]
-  cpu                      = "512"
-  memory                   = "1024"
-  network_mode             = "awsvpc"
-  execution_role_arn       = var.ecs_task_execution_role_arn
-  task_role_arn            = var.ecs_task_execution_role_arn
-
-  container_definitions = jsonencode([
-    {
-      name      = "strapi"
-      image     = "607700977843.dkr.ecr.us-east-2.amazonaws.com/aviral-strapi-app:latest"
-      essential = true
-      portMappings = [
-        {
-          containerPort = 1337
-          hostPort      = 1337
-          protocol      = "tcp"
-        }
-      ],
-      environment = [
-        {
-          name  = "NODE_ENV"
-          value = "production"
-        },
-        {
-          name  = "DATABASE_URL"
-          value = "postgresql://${var.db_username}:${var.db_password}@aviral-strapi-postgres.cbymg2mgkcu2.us-east-2.rds.amazonaws.com:5432/${var.db_name}"
-        },
-        {
-          name  = "APP_KEYS"
-          value = "H5mnz8odDwNsrPrHYZMK+w==,vflz6dcxdZtLmb/qr/38bg==,2RQzSRADDruCIWu1qHtkGw==,gwSyUiod2cNkoIifB1wClw=="
-        },
-        {
-          name  = "JWT_SECRET"
-          value = "EYw8dnO6uAJgieoP0V2QCA=="
-        },
-        {
-          name  = "API_TOKEN_SALT"
-          value = "ntITJUKq7KPLSs3yMDWmWw=="
-        },
-        {
-          name  = "ADMIN_JWT_SECRET"
-          value = "EYw8dnO6uAJgieoP0V2QCA=="
-        },
-        {
-          name  = "TRANSFER_TOKEN_SALT"
-          value = "6hJTsNusRF6kArOCiUI0aA=="
-        },
-        {
-          name  = "ENCRYPTION_KEY"
-          value = "oQQVoC1EbAsvD0UUeGNHDA=="
-        }
-      ],
-      logConfiguration = {
-        logDriver = "awslogs",
-        options = {
-          awslogs-group         = "/ecs/strapi-app-aviral-latest",
-          awslogs-region        = var.region,
-          awslogs-stream-prefix = "ecs"
-        }
-      }
-    }
-  ])
-}
-
-resource "aws_security_group" "ecs_sg" {
-  name        = "aviral-strapi-ecs-sg"
-  description = "Allow HTTP from anywhere and Postgres traffic within SG"
+# Security Group
+resource "aws_security_group" "aviral_sg" {
+  name        = "aviral-strapi-alb-sg"
+  description = "Allow HTTP and HTTPS traffic to ALB"
   vpc_id      = data.aws_vpc.default.id
 
   ingress {
@@ -107,16 +25,9 @@ resource "aws_security_group" "ecs_sg" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
-  ingress {
-    description = "Postgres access"
-    from_port   = 5432
-    to_port     = 5432
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
 
   ingress {
-    description = "Allow container port"
+    description = "Allow HTTPS"
     from_port   = 1337
     to_port     = 1337
     protocol    = "tcp"
@@ -124,123 +35,128 @@ resource "aws_security_group" "ecs_sg" {
   }
 
   egress {
+    description = "Allow all outbound traffic"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
-  tags = {
-    Name = "Aviral-Strapi-ECS-SG"
-  }
 
-  
+  tags = {
+    Name = "aviral-strapi-alb-sg"
+  }
 }
 
-# Load Balancer
-resource "aws_lb" "alb" {
-  name               = "new-strapi-alb-aviral"
+# ALB
+resource "aws_lb" "aviral_strapi_alb" {
+  name               = "aviral-strapi-alb"
   internal           = false
   load_balancer_type = "application"
-  security_groups    = [aws_security_group.ecs_sg.id]
-  subnets = [
-  "subnet-024126fd1eb33ec08", 
-  "subnet-03e27b60efa8df9f0"  
-]
-}
-# Create RDS subnet group
-resource "aws_db_subnet_group" "db_subnet_group" {
-  name       = "aviral-strapi-db-subnet-group"
-  subnet_ids = [
-    "subnet-024126fd1eb33ec08", 
-    "subnet-03e27b60efa8df9f0"  
-  ]
+  security_groups    = [aws_security_group.aviral_sg.id]
+  subnets            = ["subnet-0c0bb5df2571165a9", "subnet-0cc2ddb32492bcc41"]
+
   tags = {
-    Name = "strapi-db-subnet-group-avi"
-  }
-
-  lifecycle {
-    ignore_changes = [subnet_ids]
+    Name = "aviral-strapi-alb"
   }
 }
 
+# Target Group
+resource "aws_lb_target_group" "aviral_strapi_tg" {
+  name         = "aviral-strapi-tg"
+  port         = 1337
+  protocol     = "HTTP"
+  vpc_id       = data.aws_vpc.default.id
+  target_type  = "ip"
 
-# Target group for ECS tasks
-resource "aws_lb_target_group" "tg" {
-  name        = "aviral-strapi-tg-new"
-  port        = 1337
-  protocol    = "HTTP"
-  vpc_id      = data.aws_vpc.default.id
-  target_type = "ip"
   health_check {
     path                = "/"
-    protocol            = "HTTP"
     interval            = 30
-    timeout             = 5
+    timeout             = 15
     healthy_threshold   = 2
     unhealthy_threshold = 2
     matcher             = "200-399"
   }
+
   tags = {
-    Name = "StrapiTG-aviral"
+    Name = "aviral-strapi-tg"
   }
 }
 
-# Listener to forward HTTP to target group
-resource "aws_lb_listener" "listener" {
-  load_balancer_arn = aws_lb.alb.arn
+# Listener
+resource "aws_lb_listener" "aviral_listener" {
+  load_balancer_arn = aws_lb.aviral_strapi_alb.arn
   port              = 80
   protocol          = "HTTP"
 
   default_action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.tg.arn
+    target_group_arn = aws_lb_target_group.aviral_strapi_tg.arn
   }
 }
 
-# Create RDS PostgreSQL instance
-resource "aws_db_instance" "postgres" {
-  identifier             = "aviral-strapi-postgres"
-  engine                 = "postgres"
-  engine_version         = "17.4"
-  instance_class         = "db.t3.micro"
-  allocated_storage      = 20
-  db_name                = var.db_name
-  username               = var.db_username
-  password               = var.db_password
-  db_subnet_group_name   = aws_db_subnet_group.db_subnet_group.name
-  vpc_security_group_ids = [aws_security_group.ecs_sg.id]
-  skip_final_snapshot    = true
-  publicly_accessible    = false
-  backup_retention_period = 7
-
-  tags = {
-    Name = "AviralStrapiPostgresDB"
-  }
+# ECS Cluster
+resource "aws_ecs_cluster" "aviral_strapi_cluster" {
+  name = "aviral-strapi-cluster"
 }
 
-## ECS Service
-resource "aws_ecs_service" "strapi_service" {
-  name            = "aviral-strapi-service_v2"
-  cluster         = aws_ecs_cluster.strapi_cluster.id
-  task_definition = aws_ecs_task_definition.strapi_task.arn
+# ECS Task Definition
+resource "aws_ecs_task_definition" "aviral_strapi_task" {
+  family                   = "aviral-strapi-task"
+  network_mode             = "awsvpc"
+  requires_compatibilities = ["FARGATE"]
+  cpu                      = "256"
+  memory                   = "512"
+  execution_role_arn       = var.execution_role_arn
+  task_role_arn            = var.task_role_arn
+
+  container_definitions = jsonencode([
+    {
+      name      = "aviral-strapi"
+      image     = var.container_image
+      essential = true
+      portMappings = [
+        {
+          containerPort = 1337
+          hostPort      = 1337
+        }
+      ]
+      environment = [
+        { name = "APP_KEYS",          value = "mriGdnuXMw5hhVE5h+90WXd/HFgg/IBAKhavxAaVpNw=" },
+        { name = "ADMIN_JWT_SECRET", value = "Ue3phXdalctbFhG/nzlJEyOWp55bpB+0yDmrrOJkUd8=" },
+        { name = "JWT_SECRET",        value = "Z7zoAA+ZLE4z5i6P2bWJNG80hDjn+UAAKaXrjOVirgg=" },
+        { name = "API_TOKEN_SALT",    value = "OHbq7RyXEpOGgfMpPES1Dw==" }
+      ]
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          awslogs-group         = aws_cloudwatch_log_group.strapi_log_group.name
+          awslogs-region        = var.region
+          awslogs-stream-prefix = "ecs"
+        }
+      }
+    }
+  ])
+}
+
+# ECS Service
+resource "aws_ecs_service" "aviral_strapi_service" {
+  name            = "aviral-strapi-service"
+  cluster         = aws_ecs_cluster.aviral_strapi_cluster.id
+  task_definition = aws_ecs_task_definition.aviral_strapi_task.arn
   desired_count   = 1
   launch_type     = "FARGATE"
 
   network_configuration {
-    subnets = [
-    "subnet-024126fd1eb33ec08", 
-    "subnet-03e27b60efa8df9f0"  
-  ]
-
-    security_groups = [aws_security_group.ecs_sg.id]
+    subnets          = ["subnet-0c0bb5df2571165a9", "subnet-0cc2ddb32492bcc41"]
     assign_public_ip = true
+    security_groups  = [aws_security_group.aviral_sg.id]
   }
 
   load_balancer {
-    target_group_arn = aws_lb_target_group.tg.arn
-    container_name   = "strapi"
+    target_group_arn = aws_lb_target_group.aviral_strapi_tg.arn
+    container_name   = "aviral-strapi"
     container_port   = 1337
   }
 
-  depends_on = [aws_lb_listener.listener]
+  depends_on = [aws_lb_listener.aviral_listener]
 }

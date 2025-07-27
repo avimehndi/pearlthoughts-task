@@ -1,31 +1,31 @@
-# === Build stage ===
+# === Build Stage ===
 FROM node:20-alpine as build
 
-# Set working directory
 WORKDIR /app
 
-# Copy package files and install dependencies
+# Install dependencies
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm install
 
-# Copy all files and build admin panel
+# Copy the rest of the app
 COPY . .
+
+# Build admin panel
 RUN npm run build
 
-# === Production stage ===
-FROM node:20-alpine as production
+# === Production Stage ===
+FROM node:20-alpine
 
-# Set working directory
 WORKDIR /app
 
-# Copy only necessary files from build
-COPY --from=build /app ./
+# Add SQLite support (optional alpine dependencies)
+RUN apk add --no-cache sqlite sqlite-libs
+
+# Copy from build stage
+COPY --from=build /app .
 
 # Install only production dependencies
-RUN npm ci --omit=dev
+RUN npm install --omit=dev
 
-# Expose Strapi port
 EXPOSE 1337
-
-# Start Strapi
 CMD ["npm", "start"]
