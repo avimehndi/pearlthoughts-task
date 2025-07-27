@@ -8,13 +8,13 @@ data "aws_vpc" "default" {
 
 # CloudWatch Log Group
 resource "aws_cloudwatch_log_group" "strapi_log_group" {
-  name              = "/ecs/strapi-app-avi"
+  name              = "/ecs/strapi-app-avi-new"
   retention_in_days = 7
 }
 
 # Security Group
 resource "aws_security_group" "aviral_sg" {
-  name        = "aviral-strapi-alb-sg"
+  name        = "aviral-strapi-sg-new"
   description = "Allow HTTP and HTTPS traffic to ALB"
   vpc_id      = data.aws_vpc.default.id
 
@@ -49,20 +49,20 @@ resource "aws_security_group" "aviral_sg" {
 
 # ALB
 resource "aws_lb" "aviral_strapi_alb" {
-  name               = "aviral-strapi-alb"
+  name               = "aviral-strapi-alb-new"
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.aviral_sg.id]
   subnets            = ["subnet-0c0bb5df2571165a9", "subnet-0cc2ddb32492bcc41"]
 
   tags = {
-    Name = "aviral-strapi-alb"
+    Name = "aviral-strapi-alb-new"
   }
 }
 
 # Target Group
 resource "aws_lb_target_group" "aviral_strapi_tg" {
-  name         = "aviral-strapi-tg"
+  name         = "aviral-strapi-new-tg"
   port         = 1337
   protocol     = "HTTP"
   vpc_id       = data.aws_vpc.default.id
@@ -101,7 +101,7 @@ resource "aws_ecs_cluster" "aviral_strapi_cluster" {
 
 # ECS Task Definition
 resource "aws_ecs_task_definition" "aviral_strapi_task" {
-  family                   = "aviral-strapi-task"
+  family                   = "aviral-strapi-task-new"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
   cpu                      = "256"
@@ -111,7 +111,7 @@ resource "aws_ecs_task_definition" "aviral_strapi_task" {
 
   container_definitions = jsonencode([
     {
-      name      = "aviral-strapi"
+      name      = "aviral-strapi-new"
       image     = var.container_image
       essential = true
       portMappings = [
@@ -140,7 +140,7 @@ resource "aws_ecs_task_definition" "aviral_strapi_task" {
 
 # ECS Service
 resource "aws_ecs_service" "aviral_strapi_service" {
-  name            = "aviral-strapi-service"
+  name            = "aviral-strapi-service-new"
   cluster         = aws_ecs_cluster.aviral_strapi_cluster.id
   task_definition = aws_ecs_task_definition.aviral_strapi_task.arn
   desired_count   = 1
@@ -154,7 +154,7 @@ resource "aws_ecs_service" "aviral_strapi_service" {
 
   load_balancer {
     target_group_arn = aws_lb_target_group.aviral_strapi_tg.arn
-    container_name   = "aviral-strapi"
+    container_name   = "aviral-strapi-new"
     container_port   = 1337
   }
 
