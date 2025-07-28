@@ -1,13 +1,12 @@
-# CloudWatch Dashboard for ECS Fargate Strapi Service
 resource "aws_cloudwatch_dashboard" "strapi_dashboard" {
-  dashboard_name = "Strapi-ECS-Dashboard-aviral"
+  dashboard_name = "Strapi-ECS-Dashboard-aviral-t8"
 
   dashboard_body = jsonencode({
     widgets = [
       {
         type = "metric",
-        x    = 0,
-        y    = 0,
+        x = 0,
+        y = 0,
         width = 12,
         height = 6,
         properties = {
@@ -17,41 +16,41 @@ resource "aws_cloudwatch_dashboard" "strapi_dashboard" {
           ],
           period = 300,
           stat   = "Average",
-          region = "us-east-2",
-          title  = "ECS CPU & Memory Utilization"
+          title  = "ECS CPU & Memory Utilization",
+          region = var.region
         }
       },
       {
         type = "metric",
-        x    = 0,
-        y    = 6,
+        x = 0,
+        y = 6,
         width = 12,
         height = 6,
         properties = {
           metrics = [
-            [ "AWS/ECS", "RunningTaskCount", "ClusterName", aws_ecs_cluster.strapi_cluster.name, "ServiceName", aws_ecs_service.strapi_service.name ]
+            [ "ECS/ContainerInsights", "RunningTaskCount", "ClusterName", aws_ecs_cluster.strapi_cluster.name, "ServiceName", aws_ecs_service.strapi_service.name ]
           ],
           period = 300,
           stat   = "Average",
-          region = "us-east-2",
-          title  = "ECS Running Task Count"
+          title  = "ECS Running Task Count",
+          region = var.region
         }
       },
       {
         type = "metric",
-        x    = 0,
-        y    = 12,
+        x = 0,
+        y = 12,
         width = 12,
         height = 6,
         properties = {
           metrics = [
-            [ "AWS/ECS", "NetworkBytesIn", "ClusterName", aws_ecs_cluster.strapi_cluster.name, "ServiceName", aws_ecs_service.strapi_service.name ],
-            [ ".", "NetworkBytesOut", ".", ".", ".", "." ]
+            [ "ECS/ContainerInsights", "NetworkRxBytes", "ClusterName", aws_ecs_cluster.strapi_cluster.name, "ServiceName", aws_ecs_service.strapi_service.name ],
+            [ ".", "NetworkTxBytes", ".", ".", ".", "." ]
           ],
           period = 300,
           stat   = "Sum",
-          region = "us-east-2",
-          title  = "ECS Network In/Out"
+          title  = "ECS Network In/Out (Bytes)",
+          region = var.region
         }
       }
     ]
@@ -60,7 +59,7 @@ resource "aws_cloudwatch_dashboard" "strapi_dashboard" {
 
 # CloudWatch Alarm for High CPU Utilization
 resource "aws_cloudwatch_metric_alarm" "high_cpu" {
-  alarm_name          = "Strapi-High-CPU-Alarm-aviral"
+  alarm_name          = "Strapi-High-CPU-Alarm"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 2
   metric_name         = "CPUUtilization"
@@ -77,7 +76,7 @@ resource "aws_cloudwatch_metric_alarm" "high_cpu" {
 
 # CloudWatch Alarm for High Memory Utilization
 resource "aws_cloudwatch_metric_alarm" "high_memory" {
-  alarm_name          = "Strapi-High-Memory-Alarm-aviral"
+  alarm_name          = "Strapi-High-Memory-Alarm"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 2
   metric_name         = "MemoryUtilization"
@@ -90,4 +89,38 @@ resource "aws_cloudwatch_metric_alarm" "high_memory" {
     ClusterName = aws_ecs_cluster.strapi_cluster.name
     ServiceName = aws_ecs_service.strapi_service.name
   }
+}
+
+resource "aws_cloudwatch_metric_alarm" "unhealthy_tasks" {
+  alarm_name          = "Strapi-Unhealthy-Targets"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 2
+  metric_name         = "UnHealthyHostCount"
+  namespace           = "AWS/ApplicationELB"
+  period              = 60
+  statistic           = "Average"
+  threshold           = 0
+  alarm_description   = "Triggered when ALB reports unhealthy ECS targets"
+  dimensions = {
+    LoadBalancer = aws_lb.alb.name
+    TargetGroup  = aws_lb_target_group.tg.name
+  }
+  treat_missing_data = "notBreaching"
+}
+
+resource "aws_cloudwatch_metric_alarm" "alb_latency_high" {
+  alarm_name          = "Strapi-ALB-High-Latency"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 2
+  metric_name         = "TargetResponseTime"
+  namespace           = "AWS/ApplicationELB"
+  period              = 60
+  statistic           = "Average"
+  threshold           = 1.5 # seconds
+  alarm_description   = "ALB Target response time > 1.5 seconds"
+  dimensions = {
+    LoadBalancer = aws_lb.alb.name
+    TargetGroup  = aws_lb_target_group.tg.name
+  }
+  treat_missing_data = "notBreaching"
 }
