@@ -4,5 +4,6 @@ output "alb_dns_name" {
 }
 
 output "cloudwatch_dashboard_url" {
-  value = "https://${var.region}.console.aws.amazon.com/cloudwatch/home?region=${var.region}#dashboards:name=StrapiMonitoring"
+  description = "URL to the CloudWatch Dashboard for ECS monitoring"
+  value       = "https://${var.region}.console.aws.amazon.com/cloudwatch/home?region=${var.region}#dashboards/dashboard/Strapi-ECS-Dashboard-aviral-t8"
 }

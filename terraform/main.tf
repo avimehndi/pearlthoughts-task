@@ -6,15 +6,10 @@ data "aws_vpc" "default" {
   default = true
 }
 
-data "aws_subnets" "default" {
-  filter {
-    name   = "vpc-id"
-    values = [data.aws_vpc.default.id]
-  }
-}
 
-data "aws_availability_zones" "available" {
-  state = "available"
+resource "aws_cloudwatch_log_group" "ecs_logs" {
+  name              = "/ecs/strapi-task-aviral-task8"
+  retention_in_days = 7
 }
 
 resource "aws_ecs_cluster" "strapi_cluster" {
@@ -24,51 +19,6 @@ resource "aws_ecs_cluster" "strapi_cluster" {
     value = "enabled"
   }
 }
-
-resource "aws_cloudwatch_log_group" "ecs_logs" {
-  name              = "/ecs/strapi-task-aviral-task8"
-  retention_in_days = 7
-}
-
-
-resource "aws_ecs_task_definition" "strapi_task" {
-  family                   = "strapi-task"
-  network_mode             = "awsvpc"
-  requires_compatibilities = ["FARGATE"]
-  cpu                      = "512"
-  memory                   = "1024"
-  execution_role_arn       = var.ecs_task_execution_role_arn
-  task_role_arn            = var.ecs_task_execution_role_arn
-
-  container_definitions = jsonencode([
-    {
-      name      = "av-strapi"
-      image     =  "607700977843.dkr.ecr.us-east-2.amazonaws.com/strapi-app-aviral:latest"
-      essential = true
-      portMappings = [
-        {
-          containerPort = 1337
-          protocol      = "tcp"
-        }
-      ]
-      environment = [
-        {
-          name  = "NODE_ENV"
-          value = "production"
-        }
-      ]
-      logConfiguration = {
-        logDriver = "awslogs"
-        options = {
-          awslogs-group         = aws_cloudwatch_log_group.ecs_logs.name
-          awslogs-region        = var.region
-          awslogs-stream-prefix = "strapi"
-        }
-      }
-    }
-  ])
-}
-
 
 resource "aws_security_group" "ecs_sg" {
   name        = "aviral-strapi-ecs-sg"
@@ -109,8 +59,8 @@ resource "aws_lb" "alb" {
   load_balancer_type = "application"
   security_groups    = [aws_security_group.ecs_sg.id]
   subnets = [
-    "subnet-024126fd1eb33ec08",
-    "subnet-03e27b60efa8df9f0"
+    "subnet-0c0bb5df2571165a9",
+    "subnet-0cc2ddb32492bcc41"
   ]
 }
 
@@ -145,6 +95,44 @@ resource "aws_lb_listener" "listener" {
   }
 }
 
+resource "aws_ecs_task_definition" "strapi_task" {
+  family                   = "strapi-task"
+  network_mode             = "awsvpc"
+  requires_compatibilities = ["FARGATE"]
+  cpu                      = "256"
+  memory                   = "512"
+  execution_role_arn       = var.ecs_task_execution_role_arn
+  task_role_arn            = var.ecs_task_execution_role_arn
+
+  container_definitions = jsonencode([
+    {
+      name      = "av-strapi"
+      image     =  "607700977843.dkr.ecr.us-east-2.amazonaws.com/strapi-app-aviral:latest"
+      essential = true
+      portMappings = [
+        {
+          containerPort = 1337
+          hostPort      = 1337
+        }
+      ]
+      environment = [
+        { name = "APP_KEYS",          value = "mriGdnuXMw5hhVE5h+90WXd/HFgg/IBAKhavxAaVpNw=" },
+        { name = "ADMIN_JWT_SECRET", value = "Ue3phXdalctbFhG/nzlJEyOWp55bpB+0yDmrrOJkUd8=" },
+        { name = "JWT_SECRET",        value = "Z7zoAA+ZLE4z5i6P2bWJNG80hDjn+UAAKaXrjOVirgg=" },
+        { name = "API_TOKEN_SALT",    value = "OHbq7RyXEpOGgfMpPES1Dw==" }
+      ]
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          awslogs-group         = aws_cloudwatch_log_group.ecs_logs.name
+          awslogs-region        = var.region
+          awslogs-stream-prefix = "strapi"
+        }
+      }
+    }
+  ])
+}
+
 resource "aws_ecs_service" "strapi_service" {
   name            = "aviral-strapi-service-task8"
   cluster         = aws_ecs_cluster.strapi_cluster.id
@@ -154,8 +142,8 @@ resource "aws_ecs_service" "strapi_service" {
 
   network_configuration {
     subnets = [
-      "subnet-024126fd1eb33ec08",
-      "subnet-03e27b60efa8df9f0"
+      "subnet-0c0bb5df2571165a9",
+      "subnet-0cc2ddb32492bcc41"
     ]
 
     security_groups  = [aws_security_group.ecs_sg.id]
