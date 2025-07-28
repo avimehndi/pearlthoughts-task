@@ -37,8 +37,8 @@ resource "aws_ecs_task_definition" "strapi_task" {
   requires_compatibilities = ["FARGATE"]
   cpu                      = "512"
   memory                   = "1024"
-  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
-  task_role_arn            = aws_iam_role.ecs_task_execution_role.arn
+  execution_role_arn       = var.ecs_task_execution_role_arn
+  task_role_arn            = var.ecs_task_execution_role_arn
 
   container_definitions = jsonencode([
     {
