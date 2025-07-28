@@ -42,7 +42,7 @@ resource "aws_ecs_task_definition" "strapi_task" {
 
   container_definitions = jsonencode([
     {
-      name      = "strapi"
+      name      = "av-strapi"
       image     =  "607700977843.dkr.ecr.us-east-2.amazonaws.com/strapi-app-aviral:latest"
       essential = true
       portMappings = [
@@ -60,7 +60,7 @@ resource "aws_ecs_task_definition" "strapi_task" {
       logConfiguration = {
         logDriver = "awslogs"
         options = {
-          awslogs-group         = aws_cloudwatch_log_group.strapi_logs.name
+          awslogs-group         = aws_cloudwatch_log_group.ecs_logs.name
           awslogs-region        = var.region
           awslogs-stream-prefix = "strapi"
         }
