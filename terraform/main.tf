@@ -1,13 +1,11 @@
 provider "aws" {
-  region     = var.region
+  region = var.region
 }
 
-# Use default VPC
 data "aws_vpc" "default" {
   default = true
 }
 
-# Get default subnets in the default VPC
 data "aws_subnets" "default" {
   filter {
     name   = "vpc-id"
@@ -15,12 +13,10 @@ data "aws_subnets" "default" {
   }
 }
 
-# Get availability zones (useful for ALB, ECS Fargate)
 data "aws_availability_zones" "available" {
   state = "available"
 }
 
-# ECS Cluster
 resource "aws_ecs_cluster" "strapi_cluster" {
   name = "task8-strapi-cluster-aviral"
   setting {
@@ -34,105 +30,55 @@ resource "aws_cloudwatch_log_group" "ecs_logs" {
   retention_in_days = 7
 }
 
+
 resource "aws_ecs_task_definition" "strapi_task" {
-  family                   = "strapi-task-aviral-task8"
+  family                   = "strapi-task"
+  network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
   cpu                      = "512"
   memory                   = "1024"
-  network_mode             = "awsvpc"
-  execution_role_arn       = var.ecs_task_execution_role_arn
-  task_role_arn            = var.ecs_task_execution_role_arn
+  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
+  task_role_arn            = aws_iam_role.ecs_task_execution_role.arn
+
   container_definitions = jsonencode([
     {
-      name      = "av-strapi"
+      name      = "strapi"
       image     =  "607700977843.dkr.ecr.us-east-2.amazonaws.com/strapi-app-aviral:latest"
       essential = true
       portMappings = [
         {
           containerPort = 1337
-          hostPort      = 1337
           protocol      = "tcp"
         }
-      ],
-      essential = true,
+      ]
       environment = [
-        {
-          name  = "DATABASE_SSL"
-          value = "true"
-        },
-        {
-          name  = "DATABASE_SSL_REJECT_UNAUTHORIZED"
-          value = "false"
-        },
-        {
-          name  = "JWT_SECRET"
-          value = "VzrvBw2thSR+PZb+bkM7QQ=="
-        },
-        {
-          name  = "DATABASE_CLIENT"
-          value = "postgres"
-        },
         {
           name  = "NODE_ENV"
           value = "production"
-        },
-        {
-          name  = "DATABASE_URL"
-          value = "postgresql://${var.db_username}:${var.db_password}@srs-strapi-postgres.cbymg2mgkcu2.us-east-2.rds.amazonaws.com:5432/${var.db_name}"
-        },
-        {
-          name  = "APP_KEYS"
-          value = "Gb1T3j+GY6qab7Xodi+FGA==,fOZoR3u6nrHaMCRfOXKxCw==,qu44AzknDItccWhAXPUTbQ==,n6KR+5fNVFD4FcDJFDhdDA=="
-        },
-        {
-          name  = "API_TOKEN_SALT"
-          value = "mGePSZ7j+/TE6IqAuRaOdg=="
-        },
-        {
-          name  = "ADMIN_JWT_SECRET"
-          value = "5jaga5wS6lb8TpQGBjeE6w=="
-        },
-        {
-          name  = "TRANSFER_TOKEN_SALT"
-          value = "6hJTsNusRF6kArOCiUI0aA=="
-        },
-        {
-          name  = "ENCRYPTION_KEY"
-          value = "Ai0T43Qw8f5Rr573LGe4zA=="
-        },
-
-      ],
+        }
+      ]
       logConfiguration = {
         logDriver = "awslogs"
         options = {
-          awslogs-group         = "/strapi-task-aviral-task8"
-          awslogs-region        = "us-east-2"
-          awslogs-stream-prefix = "ecs"
+          awslogs-group         = aws_cloudwatch_log_group.strapi_logs.name
+          awslogs-region        = var.region
+          awslogs-stream-prefix = "strapi"
         }
       }
-
     }
   ])
-
 }
 
-# Security group for ALB and ECS tasks
+
 resource "aws_security_group" "ecs_sg" {
   name        = "aviral-strapi-ecs-sg"
-  description = "Allow HTTP from anywhere and Postgres traffic within SG"
+  description = "Allow HTTP from anywhere"
   vpc_id      = data.aws_vpc.default.id
 
   ingress {
     description = "Allow HTTP"
     from_port   = 80
     to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-  ingress {
-    description = "Postgres access"
-    from_port   = 5432
-    to_port     = 5432
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
@@ -151,13 +97,12 @@ resource "aws_security_group" "ecs_sg" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
   tags = {
     Name = "AviralStrapiECSSG"
   }
-
 }
 
-# Load Balancer
 resource "aws_lb" "alb" {
   name               = "aviral-strapi-alb-task8"
   internal           = false
@@ -169,7 +114,6 @@ resource "aws_lb" "alb" {
   ]
 }
 
-# Target group for ECS tasks
 resource "aws_lb_target_group" "tg" {
   name        = "aviral-strapi-tg-task8"
   port        = 1337
@@ -190,7 +134,6 @@ resource "aws_lb_target_group" "tg" {
   }
 }
 
-# Listener to forward HTTP to target group
 resource "aws_lb_listener" "listener" {
   load_balancer_arn = aws_lb.alb.arn
   port              = 80
@@ -202,27 +145,6 @@ resource "aws_lb_listener" "listener" {
   }
 }
 
-# Create RDS PostgreSQL instance
-resource "aws_db_instance" "postgres" {
-  identifier              = "aviral-strapi-postgres-task-8"
-  engine                  = "postgres"
-  engine_version          = "17.4"
-  instance_class          = "db.t3.micro"
-  allocated_storage       = 20
-  db_name                 = var.db_name
-  username                = var.db_username
-  password                = var.db_password
-  db_subnet_group_name    = aws_db_subnet_group.db_subnet_group.name
-  vpc_security_group_ids  = [aws_security_group.ecs_sg.id]
-  skip_final_snapshot     = true
-  publicly_accessible     = false
-  backup_retention_period = 7
-
-  tags = {
-    Name = "AviralStrapiPostgresDB"
-  }
-}
-## ECS Service
 resource "aws_ecs_service" "strapi_service" {
   name            = "aviral-strapi-service-task8"
   cluster         = aws_ecs_cluster.strapi_cluster.id
@@ -247,20 +169,4 @@ resource "aws_ecs_service" "strapi_service" {
   }
 
   depends_on = [aws_lb_listener.listener]
-}
-
-# Create RDS subnet group
-resource "aws_db_subnet_group" "db_subnet_group" {
-  name = "aviral-strapi-db-subnet-group"
-  subnet_ids = [
-    "subnet-024126fd1eb33ec08",
-    "subnet-03e27b60efa8df9f0"
-  ]
-  tags = {
-    Name = "aviral-strapi-db-subnet-group"
-  }
-
-  lifecycle {
-    ignore_changes = [subnet_ids]
-  }
 }
