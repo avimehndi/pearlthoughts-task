@@ -113,14 +113,12 @@ resource "aws_ecs_task_definition" "strapi_task" {
           containerPort = 1337
           hostPort      = 1337
         }
-      ]
+      ] 
       environment = [
-        { name = "DATABASE_CLIENT", value = "sqlite" },
-        { name = "DATABASE_FILENAME", value = "./data.db" },
-        { name = "APP_KEYS",          value = "mriGdnuXMw5hhVE5h+90WXd/HFgg/IBAKhavxAaVpNw=" },
-        { name = "ADMIN_JWT_SECRET", value = "Ue3phXdalctbFhG/nzlJEyOWp55bpB+0yDmrrOJkUd8=" },
-        { name = "JWT_SECRET",        value = "Z7zoAA+ZLE4z5i6P2bWJNG80hDjn+UAAKaXrjOVirgg=" },
-        { name = "API_TOKEN_SALT",    value = "OHbq7RyXEpOGgfMpPES1Dw==" }
+        { name = "APP_KEYS",          value = "1759d33fa760953d6baa88d7c7222713,6fcb8ec873c8c2e49195cfdb2d9a3f6b" },
+        { name = "ADMIN_JWT_SECRET", value = "bf95062617220cc40792dd9c977148623df030177f8f506526f0a96231c75fe8" },
+        { name = "JWT_SECRET",        value = "5b7d840aac78c4b8649e28e42e5ea590aaae81b46d1481cefa95b2c7a6b79326" },
+        { name = "API_TOKEN_SALT",    value = "5086a136d5d081e075f69a0c7d2db355" }
       ]
       logConfiguration = {
         logDriver = "awslogs"
