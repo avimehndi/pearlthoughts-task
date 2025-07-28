@@ -24,6 +24,8 @@ RUN apk add --no-cache sqlite sqlite-libs
 # Copy from build stage
 COPY --from=build /app .
 
+RUN mkdir -p .tmp
+
 # Install only production dependencies
 RUN npm install --omit=dev
 

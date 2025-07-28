@@ -116,6 +116,8 @@ resource "aws_ecs_task_definition" "strapi_task" {
         }
       ]
       environment = [
+        { name = "DATABASE_CLIENT", value = "sqlite" },
+        { name = "DATABASE_FILENAME", value = "./data.db" },
         { name = "APP_KEYS",          value = "mriGdnuXMw5hhVE5h+90WXd/HFgg/IBAKhavxAaVpNw=" },
         { name = "ADMIN_JWT_SECRET", value = "Ue3phXdalctbFhG/nzlJEyOWp55bpB+0yDmrrOJkUd8=" },
         { name = "JWT_SECRET",        value = "Z7zoAA+ZLE4z5i6P2bWJNG80hDjn+UAAKaXrjOVirgg=" },
