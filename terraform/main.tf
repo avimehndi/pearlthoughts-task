@@ -22,7 +22,7 @@ data "aws_availability_zones" "available" {
 
 # ECS Cluster
 resource "aws_ecs_cluster" "strapi_cluster" {
-  name = "srs-strapi-cluster-aviral"
+  name = "task8-strapi-cluster-aviral"
   setting {
     name  = "containerInsights"
     value = "enabled"
@@ -30,12 +30,12 @@ resource "aws_ecs_cluster" "strapi_cluster" {
 }
 
 resource "aws_cloudwatch_log_group" "ecs_logs" {
-  name              = "/ecs/srs-strapi-task-aviral"
+  name              = "/ecs/strapi-task-aviral-task8"
   retention_in_days = 7
 }
 
 resource "aws_ecs_task_definition" "strapi_task" {
-  family                   = "srs-strapi-task-aviral"
+  family                   = "strapi-task-aviral-task8"
   requires_compatibilities = ["FARGATE"]
   cpu                      = "512"
   memory                   = "1024"
@@ -105,7 +105,7 @@ resource "aws_ecs_task_definition" "strapi_task" {
       logConfiguration = {
         logDriver = "awslogs"
         options = {
-          awslogs-group         = "/ecs/srs-strapi-task"
+          awslogs-group         = "/strapi-task-aviral-task8"
           awslogs-region        = "us-east-2"
           awslogs-stream-prefix = "ecs"
         }
@@ -159,7 +159,7 @@ resource "aws_security_group" "ecs_sg" {
 
 # Load Balancer
 resource "aws_lb" "alb" {
-  name               = "aviral-strapi-alb"
+  name               = "aviral-strapi-alb-task8"
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.ecs_sg.id]
@@ -171,7 +171,7 @@ resource "aws_lb" "alb" {
 
 # Target group for ECS tasks
 resource "aws_lb_target_group" "tg" {
-  name        = "aviral-strapi-tg"
+  name        = "aviral-strapi-tg-task8"
   port        = 1337
   protocol    = "HTTP"
   vpc_id      = data.aws_vpc.default.id
@@ -204,7 +204,7 @@ resource "aws_lb_listener" "listener" {
 
 # Create RDS PostgreSQL instance
 resource "aws_db_instance" "postgres" {
-  identifier              = "aviral-strapi-postgres"
+  identifier              = "aviral-strapi-postgres-task-8"
   engine                  = "postgres"
   engine_version          = "17.4"
   instance_class          = "db.t3.micro"
@@ -224,7 +224,7 @@ resource "aws_db_instance" "postgres" {
 }
 ## ECS Service
 resource "aws_ecs_service" "strapi_service" {
-  name            = "aviral-strapi-service"
+  name            = "aviral-strapi-service-task8"
   cluster         = aws_ecs_cluster.strapi_cluster.id
   task_definition = aws_ecs_task_definition.strapi_task.arn
   desired_count   = 1
