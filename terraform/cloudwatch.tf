@@ -1,5 +1,5 @@
 resource "aws_cloudwatch_dashboard" "strapi_dashboard" {
-  dashboard_name = "Strapi-ECS-Dashboard-aviral-t8"
+  dashboard_name = "Strapi-ECS-Dashboard-aviral-t9"
 
   dashboard_body = jsonencode({
     widgets = [
@@ -91,6 +91,7 @@ resource "aws_cloudwatch_metric_alarm" "high_memory" {
   }
 }
 
+# Alarm for Unhealthy Targets
 resource "aws_cloudwatch_metric_alarm" "unhealthy_tasks" {
   alarm_name          = "Strapi-Unhealthy-Targets"
   comparison_operator = "GreaterThanThreshold"
@@ -108,6 +109,7 @@ resource "aws_cloudwatch_metric_alarm" "unhealthy_tasks" {
   treat_missing_data = "notBreaching"
 }
 
+# Alarm for ALB Latency
 resource "aws_cloudwatch_metric_alarm" "alb_latency_high" {
   alarm_name          = "Strapi-ALB-High-Latency"
   comparison_operator = "GreaterThanThreshold"
