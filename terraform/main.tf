@@ -47,9 +47,6 @@ resource "aws_security_group" "ecs_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags = {
-    Name = "AviralStrapiECSSG"
-  }
 }
 
 resource "aws_lb" "alb" {
@@ -115,7 +112,10 @@ resource "aws_ecs_task_definition" "strapi_task" {
       { name = "ADMIN_JWT_SECRET", value = "bf95062617220cc40792dd9c977148623df030177f8f506526f0a96231c75fe8" },
       { name = "JWT_SECRET",        value = "5b7d840aac78c4b8649e28e42e5ea590aaae81b46d1481cefa95b2c7a6b79326" },
       { name = "API_TOKEN_SALT",    value = "5086a136d5d081e075f69a0c7d2db355" },
-      { name = "SERVER_ALLOWED_HOSTS", value = "*" }
+      {
+        name  = "SERVER_ALLOWED_HOSTS"
+        value = aws_lb.alb.dns_name
+      }
     ]
     logConfiguration = {
       logDriver = "awslogs"

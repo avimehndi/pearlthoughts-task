@@ -65,9 +65,9 @@ jobs:
           aws ec2 delete-security-group --group-id $SG_ID || true
         fi
 
-    - name: Delete ECR Images
+    - name: Delete all ECR Images (but keep repo)
       run: |
-        DIGEST=$(aws ecr list-images --repository-name $ECR_REPO --query 'imageIds[0].imageDigest' --output text)
-        if [ "$DIGEST" != "None" ]; then
-          aws ecr batch-delete-image --repository-name $ECR_REPO --image-ids imageDigest=$DIGEST || true
+        IMAGE_IDS=$(aws ecr list-images --repository-name $ECR_REPO --query 'imageIds[*]' --output json)
+        if [ "$IMAGE_IDS" != "[]" ]; then
+          aws ecr batch-delete-image --repository-name $ECR_REPO --image-ids "$IMAGE_IDS" || true
         fi

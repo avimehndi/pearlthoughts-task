@@ -1,32 +1,27 @@
 # === Build Stage ===
-FROM node:20-alpine AS build
+FROM node:20-alpine as build
 
 WORKDIR /app
-
+# Copy dependencies
 COPY package.json package-lock.json ./
-RUN npm ci
-
+RUN npm install
+# Copy rest of the app
 COPY . .
-
-# Build admin only (can be skipped for develop mode, but it's OK to keep)
+# Build admin panel
 RUN npm run build
 
-# === Development Stage ===
+# === Production Stage ===
 FROM node:20-alpine
-
 WORKDIR /app
-
+# Add SQLite dependencies
 RUN apk add --no-cache sqlite sqlite-libs
-
+# Copy from build stage
 COPY --from=build /app ./
-
+# Create necessary folders
 RUN mkdir -p /app/.tmp /app/public/uploads
-
-RUN npm ci
+# Install only production dependencies
+RUN npm install --omit=dev
 
 EXPOSE 1337
 
-ENV NODE_ENV=development
-
-# <-- THIS is the key difference for development mode!
-CMD ["npm", "run", "develop"]
+CMD ["npm", "start"]
