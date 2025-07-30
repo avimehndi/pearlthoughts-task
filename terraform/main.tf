@@ -114,7 +114,8 @@ resource "aws_ecs_task_definition" "strapi_task" {
       { name = "APP_KEYS",          value = "1759d33fa760953d6baa88d7c7222713,6fcb8ec873c8c2e49195cfdb2d9a3f6b" },
       { name = "ADMIN_JWT_SECRET", value = "bf95062617220cc40792dd9c977148623df030177f8f506526f0a96231c75fe8" },
       { name = "JWT_SECRET",        value = "5b7d840aac78c4b8649e28e42e5ea590aaae81b46d1481cefa95b2c7a6b79326" },
-      { name = "API_TOKEN_SALT",    value = "5086a136d5d081e075f69a0c7d2db355" }
+      { name = "API_TOKEN_SALT",    value = "5086a136d5d081e075f69a0c7d2db355" },
+      { name = "SERVER_ALLOWED_HOSTS", value = "*" }
     ]
     logConfiguration = {
       logDriver = "awslogs"
