@@ -67,10 +67,10 @@ jobs:
 
       - name: Trigger CodeDeploy Deployment
         run: |
-          aws deploy create-deployment \
-            --application-name StrapiCodeDeployApp-aviral \
-            --deployment-group-name StrapiDeployGroup-avi \
-            --deployment-config-name CodeDeployDefault.ECSAllAtOnce \
-            --revision "revisionType=AppSpecContent,appSpecContent={\"content\": \"$(cat appspec.json | jq -c .)\"}"
+          --application-name StrapiCodeDeployApp-aviral \
+          --deployment-group-name StrapiDeployGroup-avi \
+          --deployment-config-name CodeDeployDefault.ECSAllAtOnce \
+          --revision file://appspec.json \
+          --deployment-style deploymentType=BLUE_GREEN,deploymentOption=WITH_TRAFFIC_CONTROL
       
             
