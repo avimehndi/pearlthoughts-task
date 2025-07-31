@@ -19,76 +19,38 @@ env:
   CODEDEPLOY_GROUP: StrapiDeployGroup-avi
 
 jobs:
-  force-delete:
+  terraform-destroy:
+    name: Terraform Destroy (Strapi Infra)
     runs-on: ubuntu-latest
 
+    defaults:
+      run:
+        working-directory: ./terraform8
+
     steps:
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ env.AWS_REGION }}
+      - name: Checkout repo
+        uses: actions/checkout@v4
 
-    - name: Delete ECS Services
-      run: |
-        for svc in $BLUE_SERVICE_NAME $GREEN_SERVICE_NAME; do
-          aws ecs update-service --cluster $CLUSTER_NAME --service $svc --desired-count 0 || true
-          sleep 10
-          aws ecs delete-service --cluster $CLUSTER_NAME --service $svc --force || true
-        done
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
 
-    - name: Delete ECS Cluster
-      run: |
-        aws ecs delete-cluster --cluster $CLUSTER_NAME || true
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.8.4
 
-    - name: Delete Task Definitions
-      run: |
-        for arn in $(aws ecs list-task-definitions --family-prefix $TASK_FAMILY --query "taskDefinitionArns[]" --output text); do
-          aws ecs deregister-task-definition --task-definition "$arn" || true
-        done
+      - name: Download tfstate artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: tfstate-artifact
+          path: ./terraform8
 
-    - name: Delete ALB and Target Groups
-      run: |
-        TG_BLUE_ARN=$(aws elbv2 describe-target-groups --names $TG_BLUE_NAME --query "TargetGroups[0].TargetGroupArn" --output text)
-        TG_GREEN_ARN=$(aws elbv2 describe-target-groups --names $TG_GREEN_NAME --query "TargetGroups[0].TargetGroupArn" --output text)
-        ALB_ARN=$(aws elbv2 describe-load-balancers --names $ALB_NAME --query "LoadBalancers[0].LoadBalancerArn" --output text)
+      - name: Terraform Init
+        run: terraform init
 
-        if [ "$ALB_ARN" != "None" ]; then
-          LISTENER_ARN=$(aws elbv2 describe-listeners --load-balancer-arn $ALB_ARN --query "Listeners[0].ListenerArn" --output text)
-          aws elbv2 delete-listener --listener-arn $LISTENER_ARN || true
-          aws elbv2 delete-load-balancer --load-balancer-arn $ALB_ARN || true
-        fi
-
-        if [ "$TG_BLUE_ARN" != "None" ]; then
-          aws elbv2 delete-target-group --target-group-arn $TG_BLUE_ARN || true
-        fi
-        if [ "$TG_GREEN_ARN" != "None" ]; then
-          aws elbv2 delete-target-group --target-group-arn $TG_GREEN_ARN || true
-        fi
-
-    - name: Delete CodeDeploy App and Deployment Group
-      run: |
-        aws deploy delete-deployment-group \
-          --application-name $CODEDEPLOY_APP \
-          --deployment-group-name $CODEDEPLOY_GROUP || true
-
-        aws deploy delete-application --application-name $CODEDEPLOY_APP || true
-
-    - name: Delete CloudWatch Logs
-      run: |
-        aws logs delete-log-group --log-group-name $LOG_GROUP || true
-
-    - name: Delete Security Group
-      run: |
-        SG_ID=$(aws ec2 describe-security-groups --filters Name=group-name,Values=$SG_NAME --query "SecurityGroups[0].GroupId" --output text)
-        if [ "$SG_ID" != "None" ]; then
-          aws ec2 delete-security-group --group-id $SG_ID || true
-        fi
-
-    - name: Delete all ECR Images (but keep repo)
-      run: |
-        IMAGE_IDS=$(aws ecr list-images --repository-name $ECR_REPO --query 'imageIds[*]' --output json)
-        if [ "$IMAGE_IDS" != "[]" ]; then
-          aws ecr batch-delete-image --repository-name $ECR_REPO --image-ids "$IMAGE_IDS" || true
-        fi
+      - name: Terraform Destroy
+        run: terraform destroy -auto-approve -var="db_password=${{ secrets.DB_PASSWORD }}"
