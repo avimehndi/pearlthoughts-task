@@ -61,7 +61,7 @@ resource "aws_lb" "alb" {
 }
 
 resource "aws_lb_target_group" "ecs_blue" {
-  name        = "aviral-tg-blue-task11"
+  name        = "aviral-tg-blue-11"
   port        = 1337
   protocol = "HTTP"
   vpc_id      = data.aws_vpc.default.id
@@ -211,8 +211,36 @@ resource "aws_iam_role" "codedeploy_ecs_role" {
 
 resource "aws_iam_role_policy_attachment" "codedeploy_policy" {
   role       = aws_iam_role.codedeploy_ecs_role.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSCodeDeployRoleForECS"
+  policy_arn = "arn:aws:iam::aws:policy/AWSCodeDeployRoleForECS"
+
 }
+
+resource "aws_iam_role_policy" "codedeploy_ecs_permissions" {
+  name = "CodeDeployECSInlinePolicy"
+  role = aws_iam_role.codedeploy_ecs_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ecs:DescribeServices",
+          "ecs:UpdateService",
+          "ecs:ListTasks",
+          "ecs:DescribeTaskDefinition",
+          "elasticloadbalancing:DescribeTargetGroups",
+          "elasticloadbalancing:DescribeListeners",
+          "elasticloadbalancing:ModifyListener",
+          "elasticloadbalancing:DescribeRules",
+          "elasticloadbalancing:ModifyRule"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
 
 
 resource "aws_codedeploy_app" "strapi_app" {
