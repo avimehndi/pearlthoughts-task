@@ -9,8 +9,8 @@ env:
   BLUE_SERVICE_NAME: strapi-service-blue
   GREEN_SERVICE_NAME: strapi-service-green
   TASK_FAMILY: strapi-task-family
-  TG_BLUE_NAME: strapi-tg-blue-11
-  TG_GREEN_NAME: strapi-tg-green-11
+  TG_BLUE_NAME: aviral-tg-blue-11
+  TG_GREEN_NAME: aviral-tg-green-11
   ALB_NAME: strapi-alb-aviral
   LOG_GROUP: /ecs/task11-strapi
   SG_NAME: strapi-sg-aviral
