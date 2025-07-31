@@ -67,6 +67,7 @@ jobs:
 
       - name: Trigger CodeDeploy Deployment
         run: |
+          aws deploy create-deployment \
           --application-name StrapiCodeDeployApp-aviral \
           --deployment-group-name StrapiDeployGroup-avi \
           --deployment-config-name CodeDeployDefault.ECSAllAtOnce \
