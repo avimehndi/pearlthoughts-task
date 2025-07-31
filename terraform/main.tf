@@ -102,17 +102,17 @@ resource "aws_lb_listener" "listener-ecs" {
 
   default_action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.tg.arn
+    target_group_arn = aws_lb_target_group.ecs_blue.arn
   }
 }
 
 resource "aws_lb_listener_rule" "ecs" {
-  listener_arn = var.aws_lb_listener.arn
+  listener_arn = aws_lb_listener.listener-ecs.arn
   priority     = 30
 
   action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.tg.arn
+    target_group_arn = aws_lb_target_group.ecs_blue.arn
   }
   condition {
     path_pattern {
@@ -121,10 +121,50 @@ resource "aws_lb_listener_rule" "ecs" {
   }
 }
 
+
+resource "aws_ecs_task_definition" "strapi_task" {
+  family                   = "strapi-task"
+  network_mode             = "awsvpc"
+  requires_compatibilities = ["FARGATE"]
+  cpu                      = "256"
+  memory                   = "512"
+  execution_role_arn       = var.ecs_task_execution_role_arn
+  task_role_arn            = var.ecs_task_execution_role_arn
+
+  container_definitions = jsonencode([{
+    name      = "av-strapi"
+    image     = "607700977843.dkr.ecr.us-east-2.amazonaws.com/strapi-app-aviral:latest"
+    essential = true
+    portMappings = [{
+      containerPort = 1337
+    }]
+    environment = [
+      { name = "APP_KEYS",          value = "1759d33fa760953d6baa88d7c7222713,6fcb8ec873c8c2e49195cfdb2d9a3f6b" },
+      { name = "ADMIN_JWT_SECRET", value = "bf95062617220cc40792dd9c977148623df030177f8f506526f0a96231c75fe8" },
+      { name = "JWT_SECRET",        value = "5b7d840aac78c4b8649e28e42e5ea590aaae81b46d1481cefa95b2c7a6b79326" },
+      { name = "API_TOKEN_SALT",    value = "5086a136d5d081e075f69a0c7d2db355" },
+      {
+        name  = "SERVER_ALLOWED_HOSTS"
+        value = aws_lb.alb.dns_name
+      }
+    ]
+    logConfiguration = {
+      logDriver = "awslogs"
+      options = {
+        awslogs-group         = aws_cloudwatch_log_group.ecs_logs.name
+        awslogs-region        = var.region
+        awslogs-stream-prefix = "strapi"
+      }
+    }
+  }])
+}
+
+
+
 resource "aws_ecs_service" "ecs" {
   name            = "strapi-service-aviral"
-  cluster         = var.ecs_cluster_name.id
-  task_definition = aws_ecs_task_definition.ecs.arn
+  cluster         = aws_ecs_cluster.strapi_cluster.id
+  task_definition = aws_ecs_task_definition.strapi_task.arn
   launch_type     = "FARGATE"
   desired_count   = 1
 
@@ -167,6 +207,12 @@ resource "aws_iam_role" "codedeploy_ecs_role" {
   })
 }
 
+resource "aws_iam_role_policy_attachment" "codedeploy_policy" {
+  role       = aws_iam_role.codedeploy_ecs_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSCodeDeployRoleForECS"
+}
+
+
 resource "aws_codedeploy_app" "strapi_app" {
   name             = "StrapiCodeDeployApp-aviral"
   compute_platform = "ECS"
@@ -175,7 +221,7 @@ resource "aws_codedeploy_app" "strapi_app" {
 resource "aws_codedeploy_deployment_group" "strapi_deployment_group" {
   app_name              = aws_codedeploy_app.strapi_app.name
   deployment_group_name = "StrapiDeployGroup-avi"
-  service_role_arn      = aws_iam_role.strapi_codedeploy.arn
+  service_role_arn      = aws_iam_role.codedeploy_ecs_role.arn
 
   deployment_config_name = "CodeDeployDefault.ECSCanary10Percent5Minutes"
 
@@ -204,42 +250,21 @@ resource "aws_codedeploy_deployment_group" "strapi_deployment_group" {
 
   ecs_service {
     cluster_name = aws_ecs_cluster.strapi_cluster.name
-    service_name = aws_ecs_service.strapi_service.name
+    service_name = aws_ecs_service.ecs.name
   }
 
   load_balancer_info {
     target_group_pair_info {
       target_group {
-        name = aws_lb_target_group.strapi_tg_blue.name
+        name = aws_lb_target_group.ecs_blue.name
       }
       target_group {
-        name = aws_lb_target_group.strapi_tg_green.name
+        name = aws_lb_target_group.ecs_green.name
       }
       prod_traffic_route {
-        listener_arns = [aws_lb_listener.strapi_listener.arn]
+        listener_arns = [aws_lb_listener.listener-ecs.arn]
       }
     }
   }
-}
-resource "aws_iam_role" "strapi_codedeploy" {
-  name = "strapi-codedeploy-role1-aviral"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Principal = {
-          Service = "codedeploy.amazonaws.com"
-        }
-        Action = "sts:AssumeRole"
-      }
-    ]
-  })
-}
-
-resource "aws_iam_role_policy_attachment" "strapi_codedeploy_attach" {
-  role       = aws_iam_role.strapi_codedeploy.name
-  policy_arn = "arn:aws:iam::aws:policy/AWSCodeDeployRoleForECS"
 }
 
