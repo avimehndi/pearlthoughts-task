@@ -6,11 +6,6 @@ data "aws_vpc" "default" {
   default = true
 }
 
-variable "subnet_ids" {
-  type = list(string)
-  description = "List of subnet IDs"
-}
-
 resource "aws_cloudwatch_log_group" "ecs_logs" {
   name              = "/ecs/strapi-task-aviral-task11"
   retention_in_days = 7
