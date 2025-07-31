@@ -63,6 +63,7 @@ resource "aws_lb" "alb" {
 resource "aws_lb_target_group" "ecs_blue" {
   name        = "aviral-tg-blue-task11"
   port        = 1337
+  protocol = "HTTP"
   vpc_id      = data.aws_vpc.default.id
   target_type = "ip"
   health_check {
@@ -82,6 +83,7 @@ resource "aws_lb_target_group" "ecs_blue" {
 resource "aws_lb_target_group" "ecs_green" {
   name        = "aviral-tg-green-11"
   port        = 1337
+  protocol = "HTTP"
   target_type = "ip"
   vpc_id      = data.aws_vpc.default.id
   health_check {
