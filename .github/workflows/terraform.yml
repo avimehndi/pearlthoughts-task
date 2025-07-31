@@ -1,4 +1,4 @@
-name: Terraform Deploy to ECS Fargate (Post Dockerize)
+name: Terraform Deploy to ECS Fargate (Blue/Green)
 
 on:
   workflow_run:
@@ -9,36 +9,38 @@ on:
 env:
   AWS_REGION: us-east-2
   ECR_REPOSITORY: strapi-app-aviral
-  ECR_REGISTRY: 607700977843.dkr.ecr.us-east-2.amazonaws.com
+  ECR_REGISTRY: 607700977843.dkr.ecr.ap-south-1.amazonaws.com
   IMAGE_TAG: latest
 
 jobs:
   terraform:
+    name: Apply Terraform Infrastructure
     runs-on: ubuntu-latest
+
     defaults:
       run:
         shell: bash
         working-directory: ./terraform
 
     steps:
-      - name: Checkout repo
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Download previous Terraform state (if available)
+      - name: Download Terraform State (if available)
         uses: actions/download-artifact@v4
         with:
           name: terraform-state
           path: ./terraform
         continue-on-error: true
 
-      - name: Configure AWS credentials
+      - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Setup Terraform
+      - name: Setup Terraform CLI
         uses: hashicorp/setup-terraform@v2
 
       - name: Terraform Init
@@ -50,4 +52,3 @@ jobs:
 
       - name: Terraform Apply
         run: terraform apply -auto-approve -input=false
-
