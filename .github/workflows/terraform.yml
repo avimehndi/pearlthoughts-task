@@ -1,11 +1,9 @@
 name: Terraform with ECS Blue/Green Deployment
 
 on:
-  workflow_run:
-    workflows: [Dockerize and Push to ECR]
-    types:
-      - completed
-
+  push:
+    branches:
+      - main
 env:
   AWS_REGION: us-east-2
   ECR_REPOSITORY: strapi-app-aviral
@@ -65,7 +63,7 @@ jobs:
       - name: Trigger CodeDeploy Deployment
         run: |
           aws deploy create-deployment \
-            --application-name strapi-codedeploy-app-aviral \
+            --application-name StrapiCodeDeployApp-aviral \
             --deployment-group-name StrapiDeployGroup-avi \
             --deployment-config-name CodeDeployDefault.ECSAllAtOnce \
             --revision '{

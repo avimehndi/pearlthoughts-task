@@ -1,9 +1,7 @@
 name: Dockerize and Push to ECR
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:  # Manual trigger
 
 env:
   AWS_REGION: us-east-2
