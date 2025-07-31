@@ -60,14 +60,18 @@ jobs:
         id: taskdef
         run: |
           LATEST_ARN=$(aws ecs list-task-definitions --family-prefix $TASK_FAMILY --sort DESC --max-items 1 --query "taskDefinitionArns[0]" --output text)
-          echo "LATEST_TASK_DEF=$LATEST_ARN" >> $GITHUB_ENV
-          echo "Latest task def: $LATEST_ARN"
+          echo "task_arn=$LATEST_ARN" >> $GITHUB_OUTPUT
 
-      - name: Trigger Deployment via CodeDeploy
+      - name: Trigger CodeDeploy Deployment
         run: |
           aws deploy create-deployment \
-            --application-name $CODEDEPLOY_APP \
-            --deployment-group-name $CODEDEPLOY_GROUP \
+            --application-name strapi-codedeploy-app-aviral \
+            --deployment-group-name StrapiDeployGroup-avi \
             --deployment-config-name CodeDeployDefault.ECSAllAtOnce \
-            --description "Auto-triggered from GitHub Terraform workflow" \
-            --revision revisionType=AppSpecContent,appSpecContent="{\"version\":\"1.0\",\"Resources\":[{\"TargetService\":{\"Type\":\"AWS::ECS::Service\",\"Properties\":{\"TaskDefinition\":\"$LATEST_TASK_DEF\",\"LoadBalancerInfo\":{\"ContainerName\":\"strapi\",\"ContainerPort\":1337}}}}]}"
+            --revision '{
+              "revisionType": "AppSpecContent",
+              "appSpecContent": {
+                "content": "{\"version\":\"1.0\",\"Resources\":[{\"TargetService\":{\"Type\":\"AWS::ECS::Service\",\"Properties\":{\"TaskDefinition\":\"${{ steps.taskdef.outputs.task_arn }}\",\"LoadBalancerInfo\":{\"ContainerName\":\"strapi\",\"ContainerPort\":1337}}}}]}"
+              }
+            }'
+            
