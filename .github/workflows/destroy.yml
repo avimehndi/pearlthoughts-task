@@ -5,14 +5,18 @@ on:
 
 env:
   AWS_REGION: us-east-2
-  CLUSTER_NAME: task9-strapi-cluster-aviral
-  SERVICE_NAME: aviral-strapi-service-task9
-  TASK_FAMILY: strapi-task
-  TG_NAME: aviral-strapi-tg-task9
-  ALB_NAME: aviral-strapi-alb-task9
-  LOG_GROUP: /ecs/strapi-task-aviral-task9
-  SG_NAME: aviral-strapi-ecs-sg
+  CLUSTER_NAME: task11-strapi-cluster-aviral
+  BLUE_SERVICE_NAME: strapi-service-blue
+  GREEN_SERVICE_NAME: strapi-service-green
+  TASK_FAMILY: strapi-task-family
+  TG_BLUE_NAME: strapi-tg-blue
+  TG_GREEN_NAME: strapi-tg-green
+  ALB_NAME: strapi-alb-aviral
+  LOG_GROUP: /ecs/task11-strapi
+  SG_NAME: strapi-sg-aviral
   ECR_REPO: strapi-app-aviral
+  CODEDEPLOY_APP: strapi-app-deploy
+  CODEDEPLOY_GROUP: StrapiDeployGroup-avi
 
 jobs:
   force-delete:
@@ -26,11 +30,16 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ env.AWS_REGION }}
 
-    - name: Delete ECS Service & Cluster
+    - name: Delete ECS Services
       run: |
-        aws ecs update-service --cluster $CLUSTER_NAME --service $SERVICE_NAME --desired-count 0 || true
-        sleep 15
-        aws ecs delete-service --cluster $CLUSTER_NAME --service $SERVICE_NAME --force || true
+        for svc in $BLUE_SERVICE_NAME $GREEN_SERVICE_NAME; do
+          aws ecs update-service --cluster $CLUSTER_NAME --service $svc --desired-count 0 || true
+          sleep 10
+          aws ecs delete-service --cluster $CLUSTER_NAME --service $svc --force || true
+        done
+
+    - name: Delete ECS Cluster
+      run: |
         aws ecs delete-cluster --cluster $CLUSTER_NAME || true
 
     - name: Delete Task Definitions
@@ -39,9 +48,10 @@ jobs:
           aws ecs deregister-task-definition --task-definition "$arn" || true
         done
 
-    - name: Delete ALB and Target Group
+    - name: Delete ALB and Target Groups
       run: |
-        TG_ARN=$(aws elbv2 describe-target-groups --names $TG_NAME --query "TargetGroups[0].TargetGroupArn" --output text)
+        TG_BLUE_ARN=$(aws elbv2 describe-target-groups --names $TG_BLUE_NAME --query "TargetGroups[0].TargetGroupArn" --output text)
+        TG_GREEN_ARN=$(aws elbv2 describe-target-groups --names $TG_GREEN_NAME --query "TargetGroups[0].TargetGroupArn" --output text)
         ALB_ARN=$(aws elbv2 describe-load-balancers --names $ALB_NAME --query "LoadBalancers[0].LoadBalancerArn" --output text)
 
         if [ "$ALB_ARN" != "None" ]; then
@@ -50,15 +60,26 @@ jobs:
           aws elbv2 delete-load-balancer --load-balancer-arn $ALB_ARN || true
         fi
 
-        if [ "$TG_ARN" != "None" ]; then
-          aws elbv2 delete-target-group --target-group-arn $TG_ARN || true
+        if [ "$TG_BLUE_ARN" != "None" ]; then
+          aws elbv2 delete-target-group --target-group-arn $TG_BLUE_ARN || true
         fi
+        if [ "$TG_GREEN_ARN" != "None" ]; then
+          aws elbv2 delete-target-group --target-group-arn $TG_GREEN_ARN || true
+        fi
+
+    - name: Delete CodeDeploy App and Deployment Group
+      run: |
+        aws deploy delete-deployment-group \
+          --application-name $CODEDEPLOY_APP \
+          --deployment-group-name $CODEDEPLOY_GROUP || true
+
+        aws deploy delete-application --application-name $CODEDEPLOY_APP || true
 
     - name: Delete CloudWatch Logs
       run: |
         aws logs delete-log-group --log-group-name $LOG_GROUP || true
 
-    - name: Delete Security Groups
+    - name: Delete Security Group
       run: |
         SG_ID=$(aws ec2 describe-security-groups --filters Name=group-name,Values=$SG_NAME --query "SecurityGroups[0].GroupId" --output text)
         if [ "$SG_ID" != "None" ]; then

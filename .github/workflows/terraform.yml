@@ -1,4 +1,4 @@
-name: Terraform Deploy to ECS Fargate (Blue/Green)
+name: Terraform with ECS Blue/Green Deployment
 
 on:
   workflow_run:
@@ -8,47 +8,54 @@ on:
 
 env:
   AWS_REGION: us-east-2
-  ECR_REPOSITORY: strapi-app-aviral
-  ECR_REGISTRY: 607700977843.dkr.ecr.ap-south-1.amazonaws.com
-  IMAGE_TAG: latest
+  CODEDEPLOY_APP: strapi-app-deploy
+  CODEDEPLOY_GROUP: StrapiDeployGroup-avi
+  TASK_FAMILY: strapi-task-family
 
 jobs:
   terraform:
-    name: Apply Terraform Infrastructure
     runs-on: ubuntu-latest
 
-    defaults:
-      run:
-        shell: bash
-        working-directory: ./terraform
-
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+    - name: Checkout Code
+      uses: actions/checkout@v4
 
-      - name: Download Terraform State (if available)
-        uses: actions/download-artifact@v4
-        with:
-          name: terraform-state
-          path: ./terraform
-        continue-on-error: true
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: 1.8.5
 
-      - name: Setup Terraform CLI
-        uses: hashicorp/setup-terraform@v2
+    - name: Terraform Init
+      run: terraform init
 
-      - name: Terraform Init
-        run: terraform init
+    - name: Terraform Format
+      run: terraform fmt -check
 
-      - name: Terraform Plan
-        id: plan
-        run: terraform plan -no-color -input=false
+    - name: Terraform Plan
+      run: terraform plan
 
-      - name: Terraform Apply
-        run: terraform apply -auto-approve -input=false
+    - name: Terraform Apply
+      run: terraform apply -auto-approve
+
+    - name: Get Latest Task Definition ARN
+      id: taskdef
+      run: |
+        LATEST_ARN=$(aws ecs list-task-definitions --family-prefix $TASK_FAMILY --sort DESC --max-items 1 --query "taskDefinitionArns[0]" --output text)
+        echo "LATEST_TASK_DEF=$LATEST_ARN" >> $GITHUB_ENV
+        echo "Latest task def: $LATEST_ARN"
+
+    - name: Trigger Deployment via CodeDeploy
+      run: |
+        aws deploy create-deployment \
+          --application-name $CODEDEPLOY_APP \
+          --deployment-group-name $CODEDEPLOY_GROUP \
+          --deployment-config-name CodeDeployDefault.ECSAllAtOnce \
+          --description "Auto-triggered from GitHub Terraform workflow" \
+          --revision revisionType=AppSpecContent,appSpecContent="{\"version\":\"1.0\",\"Resources\":[{\"TargetService\":{\"Type\":\"AWS::ECS::Service\",\"Properties\":{\"TaskDefinition\":\"$LATEST_TASK_DEF\",\"LoadBalancerInfo\":{\"ContainerName\":\"strapi\",\"ContainerPort\":1337}}}}]}"
