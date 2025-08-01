@@ -1,9 +1,10 @@
 name: Terraform with ECS Blue/Green Deployment
 
 on:
-  push:
-    branches:
-      - main
+  workflow_run:
+    workflows: [Dockerize and Push to ECR]
+    types:
+      - completed
 env:
   AWS_REGION: us-east-2
   ECR_REPOSITORY: strapi-app-aviral
