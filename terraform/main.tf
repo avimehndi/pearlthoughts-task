@@ -14,7 +14,7 @@ resource "aws_cloudwatch_log_group" "ecs_logs" {
 resource "aws_ecs_cluster" "strapi_cluster" {
   name = "task11-strapi-cluster-aviral"
   setting {
-    name  = "avi-strapi-cluster"
+    name  = "containerInsights"
     value = "enabled"
   }
 }
