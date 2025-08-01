@@ -54,24 +54,8 @@ jobs:
       - name: Terraform Apply
         run: terraform apply -auto-approve -input=false
 
-      - name: Get Latest Task Definition ARN
-        id: taskdef
-        run: |
-          LATEST_ARN=$(aws ecs list-task-definitions --family-prefix $TASK_FAMILY --sort DESC --max-items 1 --query "taskDefinitionArns[0]" --output text)
-          echo "task_arn=$LATEST_ARN" >> $GITHUB_OUTPUT
-      
-      - name: Inject Task Definition ARN into AppSpec
-        run: |
-          cp ../.github/workflows/appspec.json appspec.json
-          sed -i "s|<REPLACE_AT_RUNTIME>|${LATEST_TASK_DEF}|g" appspec.json
-
-      - name: Trigger CodeDeploy Deployment
-        run: |
-          aws deploy create-deployment \
-          --application-name StrapiCodeDeployApp-aviral \
-          --deployment-group-name StrapiDeployGroup-avi \
-          --deployment-config-name CodeDeployDefault.ECSAllAtOnce \
-          --revision file://appspec.json \
-          --deployment-style deploymentType=BLUE_GREEN,deploymentOption=WITH_TRAFFIC_CONTROL
-      
-            
+      - name: Upload Terraform State
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-state
+          path: ./terraform/terraform.tfstate
