@@ -164,8 +164,8 @@ resource "aws_security_group" "aviral_alb_sg" {
   }
 
   ingress {
-    from_port   = 8080
-    to_port     = 8080
+    from_port   = 81
+    to_port     = 81
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
     description = "Allow test listener port"
