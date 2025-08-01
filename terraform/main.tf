@@ -189,11 +189,8 @@ resource "aws_codedeploy_deployment_group" "strapi_deployment_group" {
 
     deployment_ready_option {
       action_on_timeout = "CONTINUE_DEPLOYMENT"
-      wait_time_in_minutes = 10
     }
     
-
-
   }
 
   ecs_service {
