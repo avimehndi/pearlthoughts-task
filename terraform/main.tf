@@ -6,10 +6,6 @@ resource "aws_ecs_cluster" "strapi_cluster" {
   name = "task11-strapi-cluster-aviral"
 }
 
-resource "aws_cloudwatch_log_group" "ecs_logs" {
-  name              = "/ecs/strapi-aviral-task11"
-  retention_in_days = 7
-}
 
 resource "aws_ecs_task_definition" "strapi_task" {
   family                   = "strapi-task-aviral"
@@ -33,18 +29,10 @@ resource "aws_ecs_task_definition" "strapi_task" {
       { name = "APP_KEYS",          value = "1759d33fa760953d6baa88d7c7222713,6fcb8ec873c8c2e49195cfdb2d9a3f6b" },
       { name = "ADMIN_JWT_SECRET", value = "bf95062617220cc40792dd9c977148623df030177f8f506526f0a96231c75fe8" },
       { name = "JWT_SECRET",        value = "5b7d840aac78c4b8649e28e42e5ea590aaae81b46d1481cefa95b2c7a6b79326" },
-      { name = "API_TOKEN_SALT",    value = "5086a136d5d081e075f69a0c7d2db355" },
-      
-    ]
-    logConfiguration = {
-      logDriver = "awslogs"
-      options = {
-        awslogs-group         = aws_cloudwatch_log_group.ecs_logs.name
-        awslogs-region        = var.region
-        awslogs-stream-prefix = "ecs/aviral-strapi"
-      }
+      { name = "API_TOKEN_SALT",    value = "5086a136d5d081e075f69a0c7d2db355" } 
+    ]  
     }
-  }])
+  ])
 }
 
 resource "aws_lb" "alb" {
@@ -53,8 +41,8 @@ resource "aws_lb" "alb" {
   load_balancer_type = "application"
   security_groups    = [aws_security_group.ecs_sg.id]
   subnets = [
-    "subnet-0c0bb5df2571165a9",
-    "subnet-0cc2ddb32492bcc41"
+    "subnet-0f768008c6324831f",  # Same as ECS
+    "subnet-0cc2ddb32492bcc41"   
   ]
 }
 resource "aws_lb_target_group" "ecs_blue" {
@@ -65,7 +53,7 @@ resource "aws_lb_target_group" "ecs_blue" {
   target_type = "ip"
   health_check {
     path                = "/"
-    interval            = 30
+    interval            = 60
     timeout             = 5
     healthy_threshold   = 2
     unhealthy_threshold = 2
@@ -81,11 +69,11 @@ resource "aws_lb_target_group" "ecs_green" {
   vpc_id      = "vpc-06ba36bca6b59f95e"
   health_check {
     path                = "/"
-    interval            = 30
+    interval            = 60
     timeout             = 5
     healthy_threshold   = 2
     unhealthy_threshold = 2
-    matcher             = "200-299"
+    matcher             = "200-399"
   }
 }
 
@@ -113,18 +101,10 @@ resource "aws_lb_listener" "listener-ecs-test" {
 
 resource "aws_security_group" "ecs_sg" {
   name        = "aviral-strapi-ecs-sg"
-  description = "Allow HTTP from anywhere"
+  description = "Allow HTTP from ALB"
   vpc_id      = "vpc-06ba36bca6b59f95e"
 
-  ingress {
-    description = "Allow HTTP"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
+    ingress {
     description = "Allow ALB to access ECS task on port 1337"
     from_port   = 1337
     to_port     = 1337
@@ -164,8 +144,8 @@ resource "aws_security_group" "aviral_alb_sg" {
   }
 
   ingress {
-    from_port   = 81
-    to_port     = 81
+    from_port   = 8080
+    to_port     = 8080
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
     description = "Allow test listener port"
@@ -209,7 +189,9 @@ resource "aws_codedeploy_deployment_group" "strapi_deployment_group" {
 
     deployment_ready_option {
       action_on_timeout = "CONTINUE_DEPLOYMENT"
+      wait_time_in_minutes = 10
     }
+    
 
 
   }
@@ -297,6 +279,12 @@ resource "aws_iam_role_policy" "codedeploy_ecs_permissions" {
           "ecs:UpdateService",
           "ecs:RegisterTaskDefinition",
           "elasticloadbalancing:DescribeTargetGroups",
+          "ecs:DescribeTaskDefinition",          # Missing
+          "ecs:ListTasks",                       # Missing
+          "ecs:DescribeTasks",              
+          "elasticloadbalancing:DescribeTargetHealth",  # Missing
+          "elasticloadbalancing:RegisterTargets",       # Missing
+          "elasticloadbalancing:DeregisterTargets", 
           "elasticloadbalancing:DescribeListeners",
           "elasticloadbalancing:ModifyListener",
           "elasticloadbalancing:DescribeRules",
