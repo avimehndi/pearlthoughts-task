@@ -117,7 +117,7 @@ resource "aws_ecs_task_definition" "strapi_task" {
   task_role_arn            = var.ecs_task_execution_role_arn
 
   container_definitions = jsonencode([{
-    name      = "av-strapi"
+    name      = "avi-strapi"
     image     = "607700977843.dkr.ecr.us-east-2.amazonaws.com/strapi-app-aviral:latest"
     essential = true
     portMappings = [{
