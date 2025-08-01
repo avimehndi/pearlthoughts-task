@@ -13,9 +13,6 @@ output "codedeploy_deployment_group_name" {
   value       = aws_codedeploy_deployment_group.strapi_deployment_group.deployment_group_name
 }
 
-output "ecs_service_arn" {
-  value = aws_ecs_service.ecs.arn
-}
 output "ecs_task_definition" {
   value = aws_ecs_task_definition.strapi_task.arn
 }

@@ -10,10 +10,7 @@ env:
   ECR_REPOSITORY: strapi-app-aviral
   ECR_REGISTRY: 607700977843.dkr.ecr.ap-south-1.amazonaws.com
   IMAGE_TAG: latest
-  CODEDEPLOY_APP: strapi-app-deploy
-  CODEDEPLOY_GROUP: StrapiDeployGroup-avi
-  TASK_FAMILY: strapi-task-family
-
+ 
 jobs:
   terraform:
     name: Apply Terraform Infrastructure
@@ -55,8 +52,3 @@ jobs:
       - name: Terraform Apply
         run: terraform apply -auto-approve -input=false
 
-      - name: Upload Terraform State
-        uses: actions/upload-artifact@v4
-        with:
-          name: terraform-state
-          path: ./terraform/terraform.tfstate
