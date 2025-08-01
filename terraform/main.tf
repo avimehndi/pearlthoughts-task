@@ -14,7 +14,7 @@ resource "aws_cloudwatch_log_group" "ecs_logs" {
 resource "aws_ecs_cluster" "strapi_cluster" {
   name = "task11-strapi-cluster-aviral"
   setting {
-    name  = "containerInsights"
+    name  = "avi-strapi-cluster"
     value = "enabled"
   }
 }
@@ -179,13 +179,18 @@ resource "aws_iam_role_policy" "codedeploy_ecs_permissions" {
         Action = [
           "ecs:DescribeServices",
           "ecs:UpdateService",
-          "ecs:ListTasks",
-          "ecs:DescribeTaskDefinition",
+          "ecs:RegisterTaskDefinition",
           "elasticloadbalancing:DescribeTargetGroups",
           "elasticloadbalancing:DescribeListeners",
           "elasticloadbalancing:ModifyListener",
           "elasticloadbalancing:DescribeRules",
-          "elasticloadbalancing:ModifyRule"
+          "elasticloadbalancing:ModifyRule",
+          "lambda:InvokeFunction",
+          "cloudwatch:DescribeAlarms",
+          "cloudwatch:PutMetricAlarm",
+          "cloudwatch:DeleteAlarms",
+          "s3:GetObject",
+          "iam:PassRole"
         ]
         Resource = "*"
       }
@@ -271,7 +276,7 @@ resource "aws_ecs_service" "ecs" {
 
   load_balancer {
     target_group_arn = aws_lb_target_group.ecs_blue.arn   # or green
-    container_name   = "av-strapi"
+    container_name   = "avi-strapi"
     container_port   = 1337
   }
 }
