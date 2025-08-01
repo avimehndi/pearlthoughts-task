@@ -8,14 +8,14 @@ env:
   CLUSTER_NAME: task11-strapi-cluster-aviral
   BLUE_SERVICE_NAME: strapi-service-blue
   GREEN_SERVICE_NAME: strapi-service-green
-  TASK_FAMILY: strapi-task-family
+  TASK_FAMILY: aviral-strapi-task
   TG_BLUE_NAME: aviral-tg-blue-11
   TG_GREEN_NAME: aviral-tg-green-11
-  ALB_NAME: strapi-alb-aviral
-  LOG_GROUP: /ecs/task11-strapi
-  SG_NAME: strapi-sg-aviral
+  ALB_NAME: aviral-strapi-alb-task11
+  LOG_GROUP: /ecs/strapi-task-aviral-task11
+  SG_NAME: aviral-strapi-ecs-sg
   ECR_REPO: strapi-app-aviral
-  CODEDEPLOY_APP: strapi-app-deploy
+  CODEDEPLOY_APP: StrapiCodeDeployApp-aviral
   CODEDEPLOY_GROUP: StrapiDeployGroup-avi
 
 jobs:

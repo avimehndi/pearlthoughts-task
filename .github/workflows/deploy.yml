@@ -9,8 +9,8 @@ env:
   IMAGE_TAG: latest
   CODEDEPLOY_APP: StrapiCodeDeployApp-aviral
   CODEDEPLOY_GROUP: StrapiDeployGroup-avi
-  TASK_FAMILY: strapi-task-family
-  CONTAINER_NAME: strapi
+  TASK_FAMILY: aviral-strapi-task
+  CONTAINER_NAME: av-strapi
 
 jobs:
   deploy:
