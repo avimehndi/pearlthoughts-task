@@ -67,8 +67,7 @@ resource "aws_lb_target_group" "ecs_blue" {
   vpc_id      = data.aws_vpc.default.id
   target_type = "ip"
   health_check {
-    path                = "/admin"
-    protocol            = "HTTP"
+    path                = "/"
     interval            = 30
     timeout             = 5
     healthy_threshold   = 2
@@ -87,8 +86,7 @@ resource "aws_lb_target_group" "ecs_green" {
   target_type = "ip"
   vpc_id      = data.aws_vpc.default.id
   health_check {
-    path                = "/admin"
-    protocol            = "HTTP"
+    path                = "/"
     interval            = 30
     timeout             = 5
     healthy_threshold   = 2
@@ -108,28 +106,13 @@ resource "aws_lb_listener" "listener-ecs" {
   }
 }
 
-resource "aws_lb_listener_rule" "ecs" {
-  listener_arn = aws_lb_listener.listener-ecs.arn
-  priority     = 30
-
-  action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.ecs_blue.arn
-  }
-  condition {
-    path_pattern {
-      values = ["/*"]
-    }
-  }
-}
-
 
 resource "aws_ecs_task_definition" "strapi_task" {
   family                   = "strapi-task"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
-  cpu                      = "256"
-  memory                   = "512"
+  cpu                      = "512"
+  memory                   = "1024"
   execution_role_arn       = var.ecs_task_execution_role_arn
   task_role_arn            = var.ecs_task_execution_role_arn
 
@@ -139,16 +122,15 @@ resource "aws_ecs_task_definition" "strapi_task" {
     essential = true
     portMappings = [{
       containerPort = 1337
+      hostPort      = 1337
+      protocol      = "tcp"
     }]
     environment = [
       { name = "APP_KEYS",          value = "1759d33fa760953d6baa88d7c7222713,6fcb8ec873c8c2e49195cfdb2d9a3f6b" },
       { name = "ADMIN_JWT_SECRET", value = "bf95062617220cc40792dd9c977148623df030177f8f506526f0a96231c75fe8" },
       { name = "JWT_SECRET",        value = "5b7d840aac78c4b8649e28e42e5ea590aaae81b46d1481cefa95b2c7a6b79326" },
       { name = "API_TOKEN_SALT",    value = "5086a136d5d081e075f69a0c7d2db355" },
-      {
-        name  = "SERVER_ALLOWED_HOSTS"
-        value = aws_lb.alb.dns_name
-      }
+      
     ]
     logConfiguration = {
       logDriver = "awslogs"
@@ -161,36 +143,6 @@ resource "aws_ecs_task_definition" "strapi_task" {
   }])
 }
 
-
-
-resource "aws_ecs_service" "ecs" {
-  name            = "strapi-service-aviral"
-  cluster         = aws_ecs_cluster.strapi_cluster.id
-  task_definition = aws_ecs_task_definition.strapi_task.arn
-  launch_type     = "FARGATE"
-  desired_count   = 1
-
-  enable_execute_command   = true
-  enable_ecs_managed_tags  = true
-  propagate_tags           = "SERVICE"
-
-  deployment_controller {
-    type = "CODE_DEPLOY"
-  }
-  network_configuration {
-    subnets          = var.subnet_ids
-    security_groups = [aws_security_group.ecs_sg.id]
-    assign_public_ip = true
-  }
-
-  depends_on = [ aws_lb_listener.listener-ecs, aws_lb_target_group.ecs_blue, aws_lb_target_group.ecs_green ]
-
-  load_balancer {
-    target_group_arn = aws_lb_target_group.ecs_blue.arn   # or green
-    container_name   = "av-strapi"
-    container_port   = 1337
-  }
-}
 
 resource "aws_iam_role" "codedeploy_ecs_role" {
   name = "aviral-CodeDeployECSRole"
@@ -255,13 +207,13 @@ resource "aws_codedeploy_deployment_group" "strapi_deployment_group" {
 
   deployment_config_name = "CodeDeployDefault.ECSCanary10Percent5Minutes"
 
-  auto_rollback_configuration {
-    enabled = true
-    events  = ["DEPLOYMENT_FAILURE"]
-  }
   deployment_style {
     deployment_type   = "BLUE_GREEN"
     deployment_option = "WITH_TRAFFIC_CONTROL"
+  }
+  auto_rollback_configuration {
+    enabled = true
+    events  = ["DEPLOYMENT_FAILURE"]
   }
 
 
@@ -285,16 +237,41 @@ resource "aws_codedeploy_deployment_group" "strapi_deployment_group" {
 
   load_balancer_info {
     target_group_pair_info {
+      prod_traffic_route {
+        listener_arns = [aws_lb_listener.listener-ecs.arn]
+      }
       target_group {
         name = aws_lb_target_group.ecs_blue.name
       }
       target_group {
         name = aws_lb_target_group.ecs_green.name
       }
-      prod_traffic_route {
-        listener_arns = [aws_lb_listener.listener-ecs.arn]
-      }
     }
-  }
+   }
 }
 
+
+resource "aws_ecs_service" "ecs" {
+  name            = "strapi-service-aviral"
+  cluster         = aws_ecs_cluster.strapi_cluster.id
+  task_definition = aws_ecs_task_definition.strapi_task.arn
+  launch_type     = "FARGATE"
+  desired_count   = 1
+
+  deployment_controller {
+    type = "CODE_DEPLOY"
+  }
+  network_configuration {
+    subnets          =  ["subnet-0c0bb5df2571165a9", "subnet-0cc2ddb32492bcc41"]
+    security_groups = [aws_security_group.ecs_sg.id]
+    assign_public_ip = true
+  }
+
+  depends_on = [ aws_lb_listener.listener-ecs, aws_lb_target_group.ecs_blue, aws_lb_target_group.ecs_green ]
+
+  load_balancer {
+    target_group_arn = aws_lb_target_group.ecs_blue.arn   # or green
+    container_name   = "av-strapi"
+    container_port   = 1337
+  }
+}

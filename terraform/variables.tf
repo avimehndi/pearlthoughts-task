@@ -14,7 +14,6 @@ variable "ecs_task_execution_role_arn" {
   default = "arn:aws:iam::607700977843:role/ecsTaskExecutionRole"
 }
 
-
 variable "ecs_cluster_name" {
   description = "ECS cluster name (reference)"
   type        = string
