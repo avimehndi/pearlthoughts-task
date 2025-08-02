@@ -257,6 +257,9 @@ resource "aws_ecs_service" "strapi_service" {
     container_port   = 1337
   }
   depends_on = [ aws_lb_listener.listener-ecs ]
+  lifecycle {
+    ignore_changes = [task_definition, load_balancer]
+  }
 }
 
 resource "aws_iam_role" "codedeploy_ecs_role" {

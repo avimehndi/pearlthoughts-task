@@ -14,9 +14,10 @@ output "codedeploy_deployment_group_name" {
 }
 
 output "ecs_task_definition" {
+  description = "ARN of the ECS Task Definition"
   value = aws_ecs_task_definition.strapi_task.arn
 }
-
-output "latest_task_definition" {
-  value = aws_ecs_task_definition.strapi_task.arn
+output "ecs_service_name" {
+  description = "Name of the ECS Service"
+  value       = aws_ecs_service.strapi_service.name
 }
