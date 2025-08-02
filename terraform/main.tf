@@ -6,6 +6,11 @@ resource "aws_ecs_cluster" "strapi_cluster" {
   name = "task11-strapi-cluster-aviral"
 }
 
+resource "aws_cloudwatch_log_group" "aviral_strapi_log_group" {
+  name              = "/ecs/aviral-strapi"
+  retention_in_days = 7
+}
+
 
 resource "aws_ecs_task_definition" "strapi_task" {
   family                   = "strapi-task-aviral"
@@ -31,15 +36,22 @@ resource "aws_ecs_task_definition" "strapi_task" {
       { name = "JWT_SECRET",        value = "5b7d840aac78c4b8649e28e42e5ea590aaae81b46d1481cefa95b2c7a6b79326" },
       { name = "API_TOKEN_SALT",    value = "5086a136d5d081e075f69a0c7d2db355" } 
     ]  
+    logConfiguration = {
+      logDriver = "awslogs"
+      options = {
+        awslogs-group         = aws_cloudwatch_log_group.aviral_strapi_log_group.name
+        awslogs-region        = "us-east-2"
+        awslogs-stream-prefix = "ecs/aviral-strapi"
+      }
     }
-  ])
+  }])
 }
 
 resource "aws_lb" "alb" {
   name               = "aviral-strapi-alb-task11"
   internal           = false
   load_balancer_type = "application"
-  security_groups    = [aws_security_group.ecs_sg.id]
+  security_groups    = [aws_security_group.aviral_alb_sg.id]
   subnets = [
     "subnet-0f768008c6324831f",  # Same as ECS
     "subnet-0cc2ddb32492bcc41"   
@@ -53,7 +65,7 @@ resource "aws_lb_target_group" "ecs_blue" {
   target_type = "ip"
   health_check {
     path                = "/"
-    interval            = 60
+    interval            = 30
     timeout             = 5
     healthy_threshold   = 2
     unhealthy_threshold = 2
@@ -69,7 +81,7 @@ resource "aws_lb_target_group" "ecs_green" {
   vpc_id      = "vpc-06ba36bca6b59f95e"
   health_check {
     path                = "/"
-    interval            = 60
+    interval            = 30
     timeout             = 5
     healthy_threshold   = 2
     unhealthy_threshold = 2
@@ -101,10 +113,16 @@ resource "aws_lb_listener" "listener-ecs-test" {
 
 resource "aws_security_group" "ecs_sg" {
   name        = "aviral-strapi-ecs-sg"
-  description = "Allow HTTP from ALB"
+  description = "Allow HTTP"
   vpc_id      = "vpc-06ba36bca6b59f95e"
 
-    ingress {
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  ingress {
     description = "Allow ALB to access ECS task on port 1337"
     from_port   = 1337
     to_port     = 1337
@@ -124,7 +142,7 @@ resource "aws_security_group" "ecs_sg" {
 
 resource "aws_security_group" "aviral_alb_sg" {
   name        = "aviral-strapi-alb-sg"
-  description = "Allow HTTP from anywhere"
+  description = "Allow inbound HTTP from the internet"
   vpc_id      = "vpc-06ba36bca6b59f95e"
 
   ingress {
@@ -150,6 +168,7 @@ resource "aws_security_group" "aviral_alb_sg" {
     cidr_blocks = ["0.0.0.0/0"]
     description = "Allow test listener port"
   }
+
   egress {
     from_port   = 0
     to_port     = 0
