@@ -29,6 +29,10 @@ jobs:
       - name: Login to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v2
 
+      - name: Extract Short SHA
+        id: sha
+        run: echo "SHORT_SHA=${GITHUB_SHA::8}" >> $GITHUB_ENV
+
       - name: Build Docker image
         run: |
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG ./my-strapi-project
