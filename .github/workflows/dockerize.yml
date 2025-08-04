@@ -36,11 +36,14 @@ jobs:
       - name: Build Docker image
         run: |
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG ./my-strapi-project
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:$SHORT_SHA
 
       - name: Push Docker image
         run: |
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$SHORT_SHA
 
       - name: Output ECR Image URL
         run: |
           echo "Image pushed: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+          echo "Pushed Image: $ECR_REGISTRY/$ECR_REPOSITORY:$SHORT_SHA"
